@@ -1847,6 +1847,11 @@
   dependencies:
     "@types/jest" "*"
 
+"@types/three@^0.126.0":
+  version "0.126.0"
+  resolved "https://registry.npm.taobao.org/@types/three/download/@types/three-0.126.0.tgz#58f80e13ab5f8084741e8a9d7e804b9a31039043"
+  integrity sha1-WPgOE6tfgIR0HoqdfoBLmjEDkEM=
+
 "@types/uglify-js@*":
   version "3.12.0"
   resolved "https://registry.npm.taobao.org/@types/uglify-js/download/@types/uglify-js-3.12.0.tgz?cache=0&sync_timestamp=1613384649755&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2F%40types%2Fuglify-js%2Fdownload%2F%40types%2Fuglify-js-3.12.0.tgz#2bb061c269441620d46b946350c8f16d52ef37c5"
