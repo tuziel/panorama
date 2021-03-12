@@ -2,8 +2,13 @@ import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import './index.css';
 
-export default function Panorama() {
+interface PanoramaProps {
+  src: string;
+}
+
+const Panorama: React.FC<PanoramaProps> = ({ src }) => {
   const refCanvas = useRef<HTMLCanvasElement>(null);
+  const material = useRef<THREE.MeshBasicMaterial | null>(null);
 
   useEffect(() => {
     const canvas = refCanvas.current!;
@@ -14,14 +19,13 @@ export default function Panorama() {
     updateSize();
 
     const geometry = new THREE.SphereGeometry(10, 180, 90);
-    const imageUrl = require('../../assets/demo1.jpg').default;
-    const texture = new THREE.TextureLoader().load(imageUrl);
+    const texture = new THREE.TextureLoader().load('');
     texture.flipY = false;
-    const material = new THREE.MeshBasicMaterial({
+    material.current = new THREE.MeshBasicMaterial({
       map: texture,
       side: THREE.DoubleSide,
     });
-    const sphere = new THREE.Mesh(geometry, material);
+    const sphere = new THREE.Mesh(geometry, material.current);
     scene.add(sphere);
     sphere.rotation.x = 1 * Math.PI;
     sphere.rotation.y = 1.5 * Math.PI;
@@ -139,5 +143,13 @@ export default function Panorama() {
     };
   }, []);
 
+  useEffect(() => {
+    const texture = new THREE.TextureLoader().load(src);
+    texture.flipY = false;
+    material.current?.setValues({ map: texture });
+  }, [src]);
+
   return <canvas className="canvas" ref={refCanvas}></canvas>;
-}
+};
+
+export default Panorama;
