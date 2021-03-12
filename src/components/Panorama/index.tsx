@@ -101,8 +101,9 @@ const Panorama: React.FC<PanoramaProps> = ({ src }) => {
     function onmousedown(ev: MouseEvent) {
       if (ev.button !== 0) return;
       canvas.removeEventListener('mousedown', onmousedown);
-      canvas.addEventListener('mousemove', onmousemove);
-      canvas.addEventListener('mouseup', onmouseup);
+      window.addEventListener('mousemove', onmousemove, true);
+      window.addEventListener('mouseup', onmouseup, true);
+      window.addEventListener('blur', onmouseup, false);
 
       lastX = ev.clientX;
       lastY = ev.clientY;
@@ -114,8 +115,9 @@ const Panorama: React.FC<PanoramaProps> = ({ src }) => {
 
     function onmouseup() {
       canvas.addEventListener('mousedown', onmousedown);
-      canvas.removeEventListener('mousemove', onmousemove);
-      canvas.removeEventListener('mouseup', onmouseup);
+      window.removeEventListener('mousemove', onmousemove, true);
+      window.removeEventListener('mouseup', onmouseup, true);
+      window.removeEventListener('blur', onmouseup, false);
     }
 
     function onwheel(ev: WheelEvent) {
@@ -137,8 +139,9 @@ const Panorama: React.FC<PanoramaProps> = ({ src }) => {
       canvas.removeEventListener('touchend', ontouchend);
       canvas.removeEventListener('touchcancel', ontouchend);
       canvas.removeEventListener('mousedown', onmousedown);
-      canvas.removeEventListener('mousemove', onmousemove);
-      canvas.removeEventListener('mouseup', onmouseup);
+      window.removeEventListener('mousemove', onmousemove, true);
+      window.removeEventListener('mouseup', onmouseup, true);
+      window.removeEventListener('blur', onmouseup, false);
       canvas.removeEventListener('wheel', onwheel);
     };
   }, []);
