@@ -63,7 +63,7 @@ export function uv2latlnt(face: Face, u: number, v: number) {
  */
 export function sphereImage2boxImage(
   image: HTMLImageElement,
-  face: number,
+  face: Face,
   size?: number,
 ) {
   const canvas = document.createElement('canvas');
