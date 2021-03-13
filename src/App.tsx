@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import Panorama from './components/Panorama/cube';
+import Panorama from './components/Panorama/s2bDemo';
 import Menu from './components/Menu';
 
 export default function App() {
