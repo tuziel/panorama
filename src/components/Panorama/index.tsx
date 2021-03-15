@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import Dragger, { DrDragEvent, DrWheelEvent } from './senceContorl';
+import Control, { SenceDragEvent, SenceWheelEvent } from './senceControl';
 
 import './index.css';
 
@@ -24,7 +24,7 @@ const Panorama: React.FC<PanoramaProps> = ({ src }) => {
     updateSize();
     window.addEventListener('resize', updateSize);
 
-    const dragger = new Dragger(canvas);
+    const dragger = new Control(canvas);
     dragger.on('drag', drag);
     dragger.on('wheel', wheel);
 
@@ -56,7 +56,7 @@ const Panorama: React.FC<PanoramaProps> = ({ src }) => {
       camera.updateProjectionMatrix();
     }
 
-    function drag(ev: DrDragEvent) {
+    function drag(ev: SenceDragEvent) {
       const radius = size;
       const distance = Math.min(camera.position.z, size);
       const alpha = camera.fov * (Math.PI / 180);
@@ -72,7 +72,7 @@ const Panorama: React.FC<PanoramaProps> = ({ src }) => {
       scene.rotation.y += deltaY;
     }
 
-    function wheel(ev: DrWheelEvent) {
+    function wheel(ev: SenceWheelEvent) {
       const z = camera.position.z + ev.delta / 100;
       camera.position.z = Math.max(-6, Math.min(z, 20));
       camera.updateProjectionMatrix();

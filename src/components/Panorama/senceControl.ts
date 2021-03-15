@@ -1,7 +1,7 @@
 import EventManager, { EventData } from '../../utils/EventManager';
 import EventEmitter from '../../utils/EventManager/EventEmitter';
 
-export interface DrDragEvent {
+export interface SenceDragEvent {
   /** 拖拽的距离 x */
   x: number;
   /** 拖拽的距离 y */
@@ -12,38 +12,38 @@ export interface DrDragEvent {
   deltaY: number;
 }
 
-export interface DrScaleEvent {
+export interface SenceScaleEvent {
   /** 缩放值 */
   scale: number;
   /** 与上一次事件的差距 */
   deltaScale: number;
 }
 
-export interface DrWheelEvent {
+export interface SenceWheelEvent {
   delta: number;
 }
 
-export interface DrEventMap {
+export interface EventMap {
   dragStart: void;
-  drag: DrDragEvent;
+  drag: SenceDragEvent;
   dragEnd: void;
-  scale: DrScaleEvent;
-  wheel: DrWheelEvent;
+  scale: SenceScaleEvent;
+  wheel: SenceWheelEvent;
 }
 
 type Events = {
-  [K in keyof DrEventMap]: EventEmitter<DrEventMap[K]>;
+  [K in keyof EventMap]: EventEmitter<EventMap[K]>;
 };
 
-export default class Dragger {
+export default class Control {
   private target;
 
   private events = new EventManager({
     dragStart: new EventEmitter<void>(),
-    drag: new EventEmitter<DrDragEvent>(),
+    drag: new EventEmitter<SenceDragEvent>(),
     dragEnd: new EventEmitter<void>(),
-    scale: new EventEmitter<DrScaleEvent>(),
-    wheel: new EventEmitter<DrWheelEvent>(),
+    scale: new EventEmitter<SenceScaleEvent>(),
+    wheel: new EventEmitter<SenceWheelEvent>(),
   } as Events);
 
   private firstX = 0;
