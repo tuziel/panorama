@@ -98,7 +98,7 @@ export function sphereImage2boxImage(
 export function canvas2image(canvas: HTMLCanvasElement) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
     canvas.toBlob((blob) => {
-      if (!blob) return;
+      if (!blob) return reject(new Error('blob is undefined'));
 
       const reader = new FileReader();
       reader.addEventListener('error', reject);
