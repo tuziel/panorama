@@ -1,11 +1,16 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import Control, { SenceDragEvent, SenceWheelEvent } from './senceControl';
+import Control, { SenceWheelEvent } from './senceControl';
 
 import './index.css';
 
 interface PanoramaProps {
   src: string;
+}
+
+interface Detla {
+  deltaX: number;
+  deltaY: number;
 }
 
 const size = 10;
@@ -24,9 +29,10 @@ const Panorama: React.FC<PanoramaProps> = ({ src }) => {
     updateSize();
     window.addEventListener('resize', updateSize);
 
-    const dragger = new Control(canvas);
-    dragger.on('drag', drag);
-    dragger.on('wheel', wheel);
+    const control = new Control(canvas);
+    control.on('drag', drag);
+    control.on('dragInertia', drag);
+    control.on('wheel', wheel);
 
     const geometry = new THREE.SphereGeometry(size, 180, 90);
     const texture = new THREE.TextureLoader().load('');
@@ -56,7 +62,7 @@ const Panorama: React.FC<PanoramaProps> = ({ src }) => {
       camera.updateProjectionMatrix();
     }
 
-    function drag(ev: SenceDragEvent) {
+    function drag(ev: Detla) {
       const radius = size;
       const distance = Math.min(camera.position.z, size);
       const alpha = camera.fov * (Math.PI / 180);
@@ -81,7 +87,7 @@ const Panorama: React.FC<PanoramaProps> = ({ src }) => {
     return () => {
       cancelAnimationFrame(rafId);
       window.removeEventListener('resize', updateSize);
-      dragger.destory();
+      control.destory();
     };
   }, []);
 

@@ -1,15 +1,43 @@
 import EventManager, { EventData } from '../../utils/EventManager';
 import EventEmitter from '../../utils/EventManager/EventEmitter';
 
+const DRAG_PATH_MIN_LENGTH = 4;
+const DRAG_PATH_MAX_LENGTH = 10;
+const DRAG_PATH_MAX_SAMPLING_TIME = 30;
+const FRICTION = 0.02;
+
+export interface SenceDragStartEvent {
+  x: number;
+  y: number;
+}
+
 export interface SenceDragEvent {
   /** 拖拽的距离 x */
-  x: number;
+  offsetX: number;
   /** 拖拽的距离 y */
-  y: number;
+  offsetY: number;
   /** 与上一次事件的差距 x */
   deltaX: number;
   /** 与上一次事件的差距 y */
   deltaY: number;
+}
+
+export interface SenceDragEndEvent {
+  /** x 轴速度 单位为 `px / ms` */
+  velocityX: number;
+  /** y 轴速度 单位为 `px / ms` */
+  velocityY: number;
+}
+
+export interface SenceDragInertiaEvent {
+  /** 与上一次事件的差距 x */
+  deltaX: number;
+  /** 与上一次事件的差距 y */
+  deltaY: number;
+}
+
+export interface SenceWheelEvent {
+  delta: number;
 }
 
 export interface SenceScaleEvent {
@@ -19,14 +47,11 @@ export interface SenceScaleEvent {
   deltaScale: number;
 }
 
-export interface SenceWheelEvent {
-  delta: number;
-}
-
 export interface EventMap {
-  dragStart: void;
+  dragStart: SenceDragStartEvent;
   drag: SenceDragEvent;
-  dragEnd: void;
+  dragEnd: SenceDragEndEvent;
+  dragInertia: SenceDragInertiaEvent;
   scale: SenceScaleEvent;
   wheel: SenceWheelEvent;
 }
@@ -38,18 +63,22 @@ type Events = {
 export default class Control {
   private target;
 
+  private startX = 0;
+  private startY = 0;
+
+  private rafId = -1;
+
   private events = new EventManager({
-    dragStart: new EventEmitter<void>(),
+    dragStart: new EventEmitter<SenceDragStartEvent>(),
     drag: new EventEmitter<SenceDragEvent>(),
-    dragEnd: new EventEmitter<void>(),
+    dragEnd: new EventEmitter<SenceDragEndEvent>(),
+    dragInertia: new EventEmitter<SenceDragInertiaEvent>(),
     scale: new EventEmitter<SenceScaleEvent>(),
     wheel: new EventEmitter<SenceWheelEvent>(),
   } as Events);
 
-  private firstX = 0;
-  private firstY = 0;
-  private lastX = 0;
-  private lastY = 0;
+  /** [x, y, time] */
+  private path: [number, number, number][] = [];
 
   constructor(target: HTMLElement) {
     this.target = target;
@@ -80,105 +109,152 @@ export default class Control {
     target.removeEventListener('mousedown', this.onmousedown);
     window.removeEventListener('mousemove', this.onmousemove, true);
     window.removeEventListener('mouseup', this.onmouseup, true);
-    window.removeEventListener('blur', this.onmouseup, false);
+    window.removeEventListener('blur', this.onblur, false);
     target.removeEventListener('wheel', this.onwheel);
+    cancelAnimationFrame(this.rafId);
   }
 
   private init() {
     const target = this.target;
-
-    this.ontouchstart = this.ontouchstart.bind(this);
-    this.ontouchmove = this.ontouchmove.bind(this);
-    this.ontouchend = this.ontouchend.bind(this);
-    this.ontouchend = this.ontouchend.bind(this);
-    this.onmousedown = this.onmousedown.bind(this);
-    this.onmousemove = this.onmousemove.bind(this);
-    this.onmouseup = this.onmouseup.bind(this);
-    this.onmouseup = this.onmouseup.bind(this);
-    this.onwheel = this.onwheel.bind(this);
-
     target.addEventListener('touchstart', this.ontouchstart);
     target.addEventListener('mousedown', this.onmousedown);
     target.addEventListener('wheel', this.onwheel);
   }
 
-  private drag(clientX: number, clientY: number) {
-    this.events.emit('drag', {
-      x: clientX - this.firstX,
-      y: clientY - this.firstY,
-      deltaX: clientX - this.lastX,
-      deltaY: clientY - this.lastY,
-    });
+  private dragStart(x: number, y: number, time: number) {
+    this.startX = x;
+    this.startY = y;
+    this.path = [[x, y, time]];
 
-    this.lastX = clientX;
-    this.lastY = clientY;
+    cancelAnimationFrame(this.rafId);
+
+    this.events.emit('dragStart', { x, y });
   }
 
-  private ontouchstart(ev: TouchEvent) {
+  private drag(x: number, y: number, time: number) {
+    const { path } = this;
+    const [lastX, lasyY] = path[path.length - 1];
+
+    if (path.length >= DRAG_PATH_MAX_LENGTH) path.shift();
+    path.push([x, y, time]);
+
+    this.events.emit('drag', {
+      offsetX: x - this.startX,
+      offsetY: y - this.startY,
+      deltaX: x - lastX,
+      deltaY: y - lasyY,
+    });
+  }
+
+  private dragEnd() {
+    const { path } = this;
+    let vx = 0;
+    let vy = 0;
+
+    if (path.length >= DRAG_PATH_MIN_LENGTH) {
+      let [lastX, lastY, lastTime] = path.pop()!;
+      let [x, y, t, dt] = [0, 0, 0, 0];
+
+      while (path.length) {
+        [x, y, t] = path.pop()!;
+        dt = lastTime - t;
+        if (dt < DRAG_PATH_MAX_SAMPLING_TIME) {
+          vx = (lastX - x) / dt;
+          vy = (lastY - y) / dt;
+        }
+      }
+    }
+
+    if (vx !== 0) this.inertia(vx, vy, performance.now());
+    this.events.emit('dragEnd', { velocityX: vx, velocityY: vy });
+  }
+
+  private inertia(vx: number, vy: number, lastTime: number) {
+    cancelAnimationFrame(this.rafId);
+    this.rafId = requestAnimationFrame((time) => {
+      const dt = time - lastTime;
+      let deltaX = 0;
+      let deltaY = 0;
+
+      const theta = Math.atan2(vy, vx);
+      const v = Math.max(0, Math.sqrt(vx * vx + vy * vy) - FRICTION * dt);
+
+      const vx2 = Math.cos(theta) * v;
+      const vy2 = Math.sin(theta) * v;
+      deltaX = ((vx + vx2) / 2) * dt;
+      deltaY = ((vy + vy2) / 2) * dt;
+      if (v > 0) this.inertia(vx2, vy2, time);
+
+      this.events.emit('dragInertia', { deltaX, deltaY });
+    });
+  }
+
+  private ontouchstart = (ev: TouchEvent) => {
+    const { clientX, clientY } = ev.touches[0];
+    this.dragStart(clientX, clientY, performance.now());
+
+    // TODO: 未实现 scale
+
     const target = this.target;
     target.removeEventListener('touchstart', this.ontouchstart);
     target.addEventListener('touchmove', this.ontouchmove);
     target.addEventListener('touchend', this.ontouchend);
     target.addEventListener('touchcancel', this.ontouchend);
+  };
 
-    // TODO: 未实现 scale
-    const touches = ev.touches;
-    this.firstX = this.lastX = touches[0].clientX;
-    this.firstY = this.lastY = touches[0].clientY;
+  private ontouchmove = (ev: TouchEvent) => {
+    const { clientX, clientY } = ev.touches[0];
+    this.drag(clientX, clientY, performance.now());
+  };
 
-    this.events.emit('dragStart', undefined);
-  }
+  private ontouchend = () => {
+    const dt = performance.now() - this.path[this.path.length - 1][2];
+    if (dt <= DRAG_PATH_MAX_SAMPLING_TIME) this.dragEnd();
 
-  private ontouchmove(ev: TouchEvent) {
-    const touches = ev.touches;
-    const { clientX, clientY } = touches[0];
-    this.drag(clientX, clientY);
-  }
-
-  private ontouchend() {
     const target = this.target;
     target.addEventListener('touchstart', this.ontouchstart);
     target.removeEventListener('touchmove', this.ontouchmove);
     target.removeEventListener('touchend', this.ontouchend);
     target.removeEventListener('touchcancel', this.ontouchend);
-
-    this.events.emit('dragEnd', undefined);
-  }
+  };
 
   private onscale() {
     // TODO: 此处应有缩放
   }
 
-  private onmousedown(ev: MouseEvent) {
+  private onmousedown = (ev: MouseEvent) => {
     if (ev.button !== 0) return;
+
+    const { clientX, clientY } = ev;
+    this.dragStart(clientX, clientY, performance.now());
 
     const target = this.target;
     target.removeEventListener('mousedown', this.onmousedown);
     window.addEventListener('mousemove', this.onmousemove, true);
     window.addEventListener('mouseup', this.onmouseup, true);
-    window.addEventListener('blur', this.onmouseup, false);
+    window.addEventListener('blur', this.onblur, false);
+  };
 
-    this.firstX = this.lastX = ev.clientX;
-    this.firstY = this.lastY = ev.clientY;
+  private onmousemove = (ev: MouseEvent) => {
+    this.drag(ev.clientX, ev.clientY, performance.now());
+  };
 
-    this.events.emit('dragStart', undefined);
-  }
+  private onmouseup = (ev: MouseEvent) => {
+    this.onmousemove(ev);
+    this.dragEnd();
 
-  private onmousemove(ev: MouseEvent) {
-    this.drag(ev.clientX, ev.clientY);
-  }
-
-  private onmouseup() {
     const target = this.target;
     target.addEventListener('mousedown', this.onmousedown);
     window.removeEventListener('mousemove', this.onmousemove, true);
     window.removeEventListener('mouseup', this.onmouseup, true);
-    window.removeEventListener('blur', this.onmouseup, false);
+    window.removeEventListener('blur', this.onblur, false);
+  };
 
-    this.events.emit('dragEnd', undefined);
-  }
+  private onblur = () => {
+    this.dragEnd();
+  };
 
-  private onwheel(ev: WheelEvent) {
+  private onwheel = (ev: WheelEvent) => {
     this.events.emit('wheel', { delta: ev.deltaY });
-  }
+  };
 }
