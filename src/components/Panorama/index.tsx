@@ -8,7 +8,7 @@ interface PanoramaProps {
   src: string;
 }
 
-interface Detla {
+interface Delta {
   deltaX: number;
   deltaY: number;
 }
@@ -62,7 +62,7 @@ const Panorama: React.FC<PanoramaProps> = ({ src }) => {
       camera.updateProjectionMatrix();
     }
 
-    function drag(ev: Detla) {
+    function drag(ev: Delta) {
       const radius = size;
       const distance = Math.min(camera.position.z, size);
       const alpha = camera.fov * (Math.PI / 180);

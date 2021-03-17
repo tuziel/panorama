@@ -1,10 +1,14 @@
 import EventManager, { EventData } from '../../utils/EventManager';
 import EventEmitter from '../../utils/EventManager/EventEmitter';
 
-const DRAG_PATH_MIN_LENGTH = 4;
-const DRAG_PATH_MAX_LENGTH = 10;
-const DRAG_PATH_MAX_SAMPLING_TIME = 30;
-const FRICTION = 0.02;
+/** 最少采样次数 */
+const MIN_SAMPLING_LENGTH = 4;
+/** 最大采样次数 */
+const MAX_SAMPLING_LENGTH = 10;
+/** 最大采样时间 */
+const MAX_SAMPLING_TIME = 30;
+/** 摩擦力 */
+const FRICTION = 0.025;
 
 export interface SenceDragStartEvent {
   x: number;
@@ -82,7 +86,6 @@ export default class Control {
 
   constructor(target: HTMLElement) {
     this.target = target;
-
     this.init();
   }
 
@@ -135,7 +138,7 @@ export default class Control {
     const { path } = this;
     const [lastX, lasyY] = path[path.length - 1];
 
-    if (path.length >= DRAG_PATH_MAX_LENGTH) path.shift();
+    if (path.length >= MAX_SAMPLING_LENGTH) path.shift();
     path.push([x, y, time]);
 
     this.events.emit('drag', {
@@ -151,14 +154,14 @@ export default class Control {
     let vx = 0;
     let vy = 0;
 
-    if (path.length >= DRAG_PATH_MIN_LENGTH) {
+    if (path.length >= MIN_SAMPLING_LENGTH) {
       let [lastX, lastY, lastTime] = path.pop()!;
       let [x, y, t, dt] = [0, 0, 0, 0];
 
       while (path.length) {
         [x, y, t] = path.pop()!;
         dt = lastTime - t;
-        if (dt < DRAG_PATH_MAX_SAMPLING_TIME) {
+        if (dt < MAX_SAMPLING_TIME) {
           vx = (lastX - x) / dt;
           vy = (lastY - y) / dt;
         }
@@ -209,7 +212,7 @@ export default class Control {
 
   private ontouchend = () => {
     const dt = performance.now() - this.path[this.path.length - 1][2];
-    if (dt <= DRAG_PATH_MAX_SAMPLING_TIME) this.dragEnd();
+    if (dt <= MAX_SAMPLING_TIME) this.dragEnd();
 
     const target = this.target;
     target.addEventListener('touchstart', this.ontouchstart);
