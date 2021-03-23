@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import Control, { SenceWheelEvent } from './senceControl';
+import Control, { SenceWheelEvent } from './scene/control';
 
 import './index.css';
 

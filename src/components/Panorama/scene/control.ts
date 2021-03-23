@@ -1,5 +1,5 @@
-import EventManager, { EventData } from '../../utils/EventManager';
-import EventEmitter from '../../utils/EventManager/EventEmitter';
+import EventManager, { EventData } from '../../../utils/EventManager';
+import EventEmitter from '../../../utils/EventManager/EventEmitter';
 
 /** 最少采样次数 */
 const MIN_SAMPLING_LENGTH = 4;
