@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import Sphere from './scene/geometry/sphere';
 import Control, { SenceWheelEvent } from './scene/control';
 
 import './index.css';
@@ -17,7 +18,7 @@ const size = 10;
 
 const Panorama: React.FC<PanoramaProps> = ({ src }) => {
   const refCanvas = useRef<HTMLCanvasElement>(null);
-  const material = useRef<THREE.MeshBasicMaterial | null>(null);
+  const geometry = useRef<Sphere | null>(null);
 
   useEffect(() => {
     const canvas = refCanvas.current!;
@@ -34,14 +35,8 @@ const Panorama: React.FC<PanoramaProps> = ({ src }) => {
     control.on('dragInertia', drag);
     control.on('wheel', wheel);
 
-    const geometry = new THREE.SphereGeometry(size, 180, 90);
-    const texture = new THREE.TextureLoader().load('');
-    texture.flipY = false;
-    material.current = new THREE.MeshBasicMaterial({
-      map: texture,
-      side: THREE.BackSide,
-    });
-    const sphere = new THREE.Mesh(geometry, material.current);
+    geometry.current = new Sphere();
+    const sphere = geometry.current.getMesh();
     sphere.rotation.x = 1 * Math.PI;
     sphere.rotation.y = 1.5 * Math.PI;
     scene.add(sphere);
@@ -92,9 +87,7 @@ const Panorama: React.FC<PanoramaProps> = ({ src }) => {
   }, []);
 
   useEffect(() => {
-    const texture = new THREE.TextureLoader().load(src);
-    texture.flipY = false;
-    material.current?.setValues({ map: texture });
+    if (geometry.current) geometry.current.setTexture(src);
   }, [src]);
 
   return <canvas className="canvas" ref={refCanvas}></canvas>;
