@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import Sphere from './scene/geometry/sphere';
+import { Geometry, Sphere } from './scene/geometry';
 import Control, { SenceWheelEvent } from './scene/control';
 
 import './index.css';
@@ -18,7 +18,7 @@ const size = 10;
 
 const Panorama: React.FC<PanoramaProps> = ({ src }) => {
   const refCanvas = useRef<HTMLCanvasElement>(null);
-  const geometry = useRef<Sphere | null>(null);
+  const geometry = useRef<Geometry | null>(null);
 
   useEffect(() => {
     const canvas = refCanvas.current!;
@@ -37,8 +37,6 @@ const Panorama: React.FC<PanoramaProps> = ({ src }) => {
 
     geometry.current = new Sphere();
     const sphere = geometry.current.getMesh();
-    sphere.rotation.x = 1 * Math.PI;
-    sphere.rotation.y = 1.5 * Math.PI;
     scene.add(sphere);
 
     let rafId = -1;

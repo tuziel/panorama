@@ -1,9 +1,3 @@
-import * as THREE from 'three';
-
-export default interface Geometry {
-  mesh: THREE.Mesh;
-  material: THREE.Material;
-
-  getMesh(): THREE.Mesh;
-  setTexture(src: string): void;
-}
+export type { default as Geometry } from './geometry';
+export { default as Sphere } from './sphere';
+export { default as Cube } from './cube';
