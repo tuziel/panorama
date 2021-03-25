@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { Geometry, Sphere } from './scene/geometry';
-import Control, { SenceWheelEvent } from './scene/control';
+import Control, { SceneWheelEvent } from './scene/control';
 
 import './index.css';
 
@@ -12,6 +12,11 @@ interface PanoramaProps {
 interface Delta {
   deltaX: number;
   deltaY: number;
+}
+
+interface WinSize {
+  width: number;
+  height: number;
 }
 
 const size = 10;
@@ -27,13 +32,12 @@ const Panorama: React.FC<PanoramaProps> = ({ src }) => {
     const renderer = new THREE.WebGLRenderer({ canvas: canvas });
     let step: number;
 
-    updateSize();
-    window.addEventListener('resize', updateSize);
-
     const control = new Control(canvas);
     control.on('drag', drag);
     control.on('dragInertia', drag);
     control.on('wheel', wheel);
+    control.on('resize', updateSize);
+    control.updateSize();
 
     geometry.current = new Sphere();
     const sphere = geometry.current.getMesh();
@@ -46,9 +50,8 @@ const Panorama: React.FC<PanoramaProps> = ({ src }) => {
     }
     raf(() => renderer.render(scene, camera));
 
-    function updateSize() {
-      const width = window.innerWidth;
-      const height = window.innerHeight;
+    function updateSize(size: WinSize) {
+      const { width, height } = size;
       step = (camera.fov * (Math.PI / 180)) / height;
       renderer.setSize(width, height);
       camera.aspect = width / height;
@@ -71,7 +74,7 @@ const Panorama: React.FC<PanoramaProps> = ({ src }) => {
       scene.rotation.y += deltaY;
     }
 
-    function wheel(ev: SenceWheelEvent) {
+    function wheel(ev: SceneWheelEvent) {
       const z = camera.position.z + ev.delta / 100;
       camera.position.z = Math.max(-6, Math.min(z, 20));
       camera.updateProjectionMatrix();
@@ -79,7 +82,6 @@ const Panorama: React.FC<PanoramaProps> = ({ src }) => {
 
     return () => {
       cancelAnimationFrame(rafId);
-      window.removeEventListener('resize', updateSize);
       control.destory();
     };
   }, []);

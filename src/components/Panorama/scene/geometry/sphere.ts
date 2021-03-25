@@ -1,14 +1,14 @@
 import * as THREE from 'three';
 import Geometry from './geometry';
 
-const size = 10;
+const SIZE = 10;
 
 export default class Sphere implements Geometry {
   private mesh: THREE.Mesh;
   private material: THREE.MeshBasicMaterial;
 
   constructor(src: string = '') {
-    const geometry = new THREE.SphereGeometry(size, 180, 90);
+    const geometry = new THREE.SphereGeometry(SIZE, 180, 90);
     this.material = new THREE.MeshBasicMaterial({ side: THREE.BackSide });
     this.setTexture(src);
     this.mesh = new THREE.Mesh(geometry, this.material);

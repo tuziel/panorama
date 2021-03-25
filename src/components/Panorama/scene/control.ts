@@ -10,12 +10,12 @@ const MAX_SAMPLING_TIME = 30;
 /** 摩擦力 */
 const FRICTION = 0.025;
 
-export interface SenceDragStartEvent {
+export interface SceneDragStartEvent {
   x: number;
   y: number;
 }
 
-export interface SenceDragEvent {
+export interface SceneDragEvent {
   /** 拖拽的距离 x */
   offsetX: number;
   /** 拖拽的距离 y */
@@ -26,38 +26,44 @@ export interface SenceDragEvent {
   deltaY: number;
 }
 
-export interface SenceDragEndEvent {
+export interface SceneDragEndEvent {
   /** x 轴速度 单位为 `px / ms` */
   velocityX: number;
   /** y 轴速度 单位为 `px / ms` */
   velocityY: number;
 }
 
-export interface SenceDragInertiaEvent {
+export interface SceneDragInertiaEvent {
   /** 与上一次事件的差距 x */
   deltaX: number;
   /** 与上一次事件的差距 y */
   deltaY: number;
 }
 
-export interface SenceWheelEvent {
+export interface SceneWheelEvent {
   delta: number;
 }
 
-export interface SenceScaleEvent {
+export interface SceneScaleEvent {
   /** 缩放值 */
   scale: number;
   /** 与上一次事件的差距 */
   deltaScale: number;
 }
 
+export interface SceneResizeEvent {
+  width: number;
+  height: number;
+}
+
 export interface EventMap {
-  dragStart: SenceDragStartEvent;
-  drag: SenceDragEvent;
-  dragEnd: SenceDragEndEvent;
-  dragInertia: SenceDragInertiaEvent;
-  scale: SenceScaleEvent;
-  wheel: SenceWheelEvent;
+  dragStart: SceneDragStartEvent;
+  drag: SceneDragEvent;
+  dragEnd: SceneDragEndEvent;
+  dragInertia: SceneDragInertiaEvent;
+  scale: SceneScaleEvent;
+  wheel: SceneWheelEvent;
+  resize: SceneResizeEvent;
 }
 
 type Events = {
@@ -73,12 +79,13 @@ export default class Control {
   private rafId = -1;
 
   private events = new EventManager({
-    dragStart: new EventEmitter<SenceDragStartEvent>(),
-    drag: new EventEmitter<SenceDragEvent>(),
-    dragEnd: new EventEmitter<SenceDragEndEvent>(),
-    dragInertia: new EventEmitter<SenceDragInertiaEvent>(),
-    scale: new EventEmitter<SenceScaleEvent>(),
-    wheel: new EventEmitter<SenceWheelEvent>(),
+    dragStart: new EventEmitter<SceneDragStartEvent>(),
+    drag: new EventEmitter<SceneDragEvent>(),
+    dragEnd: new EventEmitter<SceneDragEndEvent>(),
+    dragInertia: new EventEmitter<SceneDragInertiaEvent>(),
+    scale: new EventEmitter<SceneScaleEvent>(),
+    wheel: new EventEmitter<SceneWheelEvent>(),
+    resize: new EventEmitter<SceneResizeEvent>(),
   } as Events);
 
   /** [x, y, time] */
@@ -114,7 +121,12 @@ export default class Control {
     window.removeEventListener('mouseup', this.onmouseup, true);
     window.removeEventListener('blur', this.onblur, false);
     target.removeEventListener('wheel', this.onwheel);
+    window.removeEventListener('resize', this.onresize);
     cancelAnimationFrame(this.rafId);
+  }
+
+  public updateSize() {
+    this.onresize();
   }
 
   private init() {
@@ -122,6 +134,7 @@ export default class Control {
     target.addEventListener('touchstart', this.ontouchstart);
     target.addEventListener('mousedown', this.onmousedown);
     target.addEventListener('wheel', this.onwheel);
+    window.addEventListener('resize', this.onresize);
   }
 
   private dragStart(x: number, y: number, time: number) {
@@ -259,5 +272,11 @@ export default class Control {
 
   private onwheel = (ev: WheelEvent) => {
     this.events.emit('wheel', { delta: ev.deltaY });
+  };
+
+  private onresize = () => {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    this.events.emit('resize', { width, height });
   };
 }
