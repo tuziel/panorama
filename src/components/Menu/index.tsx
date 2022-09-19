@@ -1,19 +1,21 @@
 // import { useEffect, useRef } from 'react';
+import { useContext } from 'react';
+import PanoramaControlContext from 'src/context/PanoramaControlContext';
 import './index.css';
 
-interface MenuProps {
-  onUpload: (file: string | ArrayBuffer) => void;
-}
+const Menu: React.FC = () => {
+  const { setSrc } = useContext(PanoramaControlContext);
 
-export default function Menu(props: MenuProps) {
   function onChange(ev: React.ChangeEvent<HTMLInputElement>) {
     const files = ev.target.files;
-    if (!files) throw new Error('No files');
-
+    if (!files) return;
     const file = files[0];
+    if (!file) return;
+
     var reader = new FileReader();
     reader.onload = (ev: ProgressEvent<FileReader>) => {
-      props.onUpload(ev.target!.result!);
+      const dataBase64 = ev.target!.result! as string;
+      setSrc(dataBase64);
     };
     reader.onerror = () => {
       throw new Error('Can not read file');
@@ -28,4 +30,6 @@ export default function Menu(props: MenuProps) {
       </div>
     </div>
   );
-}
+};
+
+export default Menu;

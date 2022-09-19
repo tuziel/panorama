@@ -1,14 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef } from 'react';
 import { Geometry, Sphere } from './scene/geometry';
 import Scene from './scene';
 
 import './index.css';
+import PanoramaControlContext from 'src/context/PanoramaControlContext';
 
-interface PanoramaProps {
-  src: string;
-}
-
-const Panorama: React.FC<PanoramaProps> = ({ src }) => {
+const Panorama: React.FC = () => {
+  const { src } = useContext(PanoramaControlContext);
   const refCanvas = useRef<HTMLCanvasElement>(null);
   const geometry = useRef<Geometry | null>(null);
 
