@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { sphereImage2boxImage } from '../../utils/geometry';
+import { sphereImage2CubeImage } from '../../utils/geometry';
 import imageUrl from '../../assets/demo1.jpg';
 
 interface PanoramaProps {
@@ -33,7 +33,7 @@ const Panorama: React.FC<PanoramaProps> = () => {
 
     loadImage(imageUrl).then(([image]) => {
       Promise.all(
-        [0, 1, 2, 3, 4, 5].map((face) => sphereImage2boxImage(image, face)),
+        [0, 1, 2, 3, 4, 5].map((face) => sphereImage2CubeImage(image, face)),
       ).then((images) => {
         images.forEach((image, i) => {
           context.drawImage(

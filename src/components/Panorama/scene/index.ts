@@ -27,7 +27,7 @@ export default class Scene {
   // 视点
   private z = 0;
   private minFov = 10;
-  private maxFov = 150;
+  private maxFov = 100;
   private minZ = -6;
   private maxZ = 20;
 
@@ -74,6 +74,7 @@ export default class Scene {
   private updateSize = (size: SceneResizeEvent) => {
     const camera = this.camera;
     const { width, height } = size;
+    // XXX: fov 更新时没有更新 step, 会导致拖拽行为异常
     this.step = (camera.fov * (Math.PI / 180)) / height;
     this.renderer.setSize(width, height);
     camera.aspect = width / height;
@@ -99,8 +100,9 @@ export default class Scene {
 
   private wheel = (ev: SceneWheelEvent) => {
     const camera = this.camera;
-    const z = camera.position.z + ev.delta / 100;
-    camera.position.z = Math.max(-6, Math.min(z, 20));
+
+    let fov = camera.fov + ev.delta / 20;
+    this.fov = camera.fov = Math.max(this.minFov, Math.min(fov, this.maxFov));
     camera.updateProjectionMatrix();
   };
 }

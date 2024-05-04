@@ -1,4 +1,4 @@
-import { sphereImage2boxImage } from 'src/utils/geometry';
+import { sphereImage2CubeImage } from 'src/utils/geometry';
 import * as THREE from 'three';
 import Geometry from './geometry';
 
@@ -56,7 +56,7 @@ export default class Cube implements Geometry {
   setTexture(src: string) {
     loadImage(src).then(([image]) => {
       [0, 1, 2, 3, 4, 5].forEach((face) =>
-        sphereImage2boxImage(image, face).then((plane) => {
+        sphereImage2CubeImage(image, face).then((plane) => {
           const texture = new THREE.TextureLoader().load(plane.src);
           this.planes[face].setValues({ map: texture });
         }),
