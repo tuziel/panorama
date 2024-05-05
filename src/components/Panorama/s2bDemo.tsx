@@ -7,12 +7,12 @@ interface PanoramaProps {
 }
 
 const sides = [
+  { side: Side.RIGHT, x: 2, y: 1 },
+  { side: Side.LEFT, x: 0, y: 1 },
+  { side: Side.TOP, x: 1, y: 0 },
+  { side: Side.BOTTOM, x: 1, y: 2 },
   { side: Side.FRONT, x: 1, y: 1 },
   { side: Side.BACK, x: 3, y: 1 },
-  { side: Side.LEFT, x: 0, y: 1 },
-  { side: Side.RIGHT, x: 2, y: 1 },
-  { side: Side.UP, x: 1, y: 0 },
-  { side: Side.DOWN, x: 1, y: 2 },
 ];
 
 const Panorama: React.FC<PanoramaProps> = () => {

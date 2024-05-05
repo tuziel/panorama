@@ -53,12 +53,12 @@ export default class Cube implements Geometry {
   setTexture(src: string) {
     loadImage(src).then(([image]) => {
       [
+        Side.RIGHT,
+        Side.LEFT,
+        Side.TOP,
+        Side.BOTTOM,
         Side.FRONT,
         Side.BACK,
-        Side.LEFT,
-        Side.RIGHT,
-        Side.UP,
-        Side.DOWN,
       ].forEach((side) =>
         sphereImage2CubeImage(image, side).then((plane) => {
           const texture = new THREE.TextureLoader().load(plane.src);

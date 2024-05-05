@@ -21,12 +21,12 @@ export function xyz2latlng(x: number, y: number, z: number): [number, number] {
 }
 
 export enum Side {
+  'RIGHT',
+  'LEFT',
+  'TOP',
+  'BOTTOM',
   'FRONT',
   'BACK',
-  'LEFT',
-  'RIGHT',
-  'UP',
-  'DOWN',
 }
 
 /**
@@ -37,18 +37,18 @@ export enum Side {
  */
 export function uv2latlng(side: Side, u: number, v: number) {
   switch (side) {
+    case Side.RIGHT:
+      return xyz2latlng(-u, 1, v);
+    case Side.LEFT:
+      return xyz2latlng(u, -1, v);
+    case Side.TOP:
+      return xyz2latlng(v, u, -1);
+    case Side.BOTTOM:
+      return xyz2latlng(-v, u, 1);
     case Side.FRONT:
       return xyz2latlng(1, u, v);
     case Side.BACK:
       return xyz2latlng(-1, -u, v);
-    case Side.LEFT:
-      return xyz2latlng(u, -1, v);
-    case Side.RIGHT:
-      return xyz2latlng(-u, 1, v);
-    case Side.UP:
-      return xyz2latlng(v, u, -1);
-    case Side.DOWN:
-      return xyz2latlng(-v, u, 1);
     // no defalut
   }
 }
