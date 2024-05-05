@@ -7,7 +7,7 @@ type RGBA = [number, number, number, number];
  * @param x
  * @param y
  * @param z
- * @returns 经纬度 `lat = [-90, 90]`, `lng = [0, 360)`
+ * @returns 经纬度 `lat = [-90, 90]`, `lng = [-180, 180]`
  */
 export function xyz2latlng(x: number, y: number, z: number): [number, number] {
   const absx = Math.abs(x);
@@ -16,40 +16,39 @@ export function xyz2latlng(x: number, y: number, z: number): [number, number] {
 
   const lat = Math.atan2(z, absxy);
   let lng = Math.atan2(y, x);
-  if (lng < 0) lng += D360;
 
   return [lat, lng];
 }
 
-export enum Face {
+export enum Side {
   'FRONT',
   'BACK',
-  'RIGHT',
   'LEFT',
+  'RIGHT',
   'UP',
   'DOWN',
 }
 
 /**
  * 获取立方体面坐标对应的经纬度
- * @param face 立方体面
+ * @param side 立方体面对应方向
  * @param u 对应的横坐标
  * @param v 对应的纵坐标
  */
-export function uv2latlng(face: Face, u: number, v: number) {
-  switch (face) {
-    case Face.FRONT:
-      return xyz2latlng(-1, -u, v);
-    case Face.BACK:
+export function uv2latlng(side: Side, u: number, v: number) {
+  switch (side) {
+    case Side.FRONT:
       return xyz2latlng(1, u, v);
-    case Face.RIGHT:
+    case Side.BACK:
+      return xyz2latlng(-1, -u, v);
+    case Side.LEFT:
       return xyz2latlng(u, -1, v);
-    case Face.LEFT:
+    case Side.RIGHT:
       return xyz2latlng(-u, 1, v);
-    case Face.UP:
-      return xyz2latlng(-v, -u, -1);
-    case Face.DOWN:
-      return xyz2latlng(v, -u, 1);
+    case Side.UP:
+      return xyz2latlng(v, u, -1);
+    case Side.DOWN:
+      return xyz2latlng(-v, u, 1);
     // no defalut
   }
 }
@@ -57,12 +56,12 @@ export function uv2latlng(face: Face, u: number, v: number) {
 /**
  * 球面全景图转正方体六面图
  * @param image 球面全景图
- * @param face 输出的立方体面
+ * @param side 输出的立方体面
  * @param size 输出图片大小
  */
 export function sphereImage2CubeImage(
   image: HTMLImageElement,
-  face: Face,
+  side: Side,
   size?: number,
 ) {
   const canvas = document.createElement('canvas');
@@ -86,8 +85,8 @@ export function sphereImage2CubeImage(
 
   for (let u = 0; u < outSize; u++) {
     for (let v = 0; v < outSize; v++) {
-      [lat, lng] = uv2latlng(face, coord2scale(u), coord2scale(v));
-      w = scale2width(lng);
+      [lat, lng] = uv2latlng(side, coord2scale(u), coord2scale(v));
+      w = scale2width(lng + D180);
       h = scale2height(lat + D90);
 
       iuv = (v * outSize + u) * 4;

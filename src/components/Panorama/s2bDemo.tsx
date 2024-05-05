@@ -1,10 +1,19 @@
 import { useEffect, useRef } from 'react';
-import { sphereImage2CubeImage } from '../../utils/geometry';
+import { Side, sphereImage2CubeImage } from '../../utils/geometry';
 import imageUrl from '../../assets/demo1.jpg';
 
 interface PanoramaProps {
   src: string;
 }
+
+const sides = [
+  { side: Side.FRONT, x: 1, y: 1 },
+  { side: Side.BACK, x: 3, y: 1 },
+  { side: Side.LEFT, x: 0, y: 1 },
+  { side: Side.RIGHT, x: 2, y: 1 },
+  { side: Side.UP, x: 1, y: 0 },
+  { side: Side.DOWN, x: 1, y: 2 },
+];
 
 const Panorama: React.FC<PanoramaProps> = () => {
   const refCanvas = useRef<HTMLCanvasElement>(null);
@@ -31,17 +40,18 @@ const Panorama: React.FC<PanoramaProps> = () => {
     canvas.width = size * 4;
     canvas.height = size * 3;
 
-    loadImage(imageUrl).then(([image]) => {
-      Promise.all(
-        [0, 1, 2, 3, 4, 5].map((face) =>
-          sphereImage2CubeImage(image, face, size),
+    loadImage(imageUrl)
+      .then(([image]) =>
+        Promise.all(
+          sides.map(({ side }) => sphereImage2CubeImage(image, side, size)),
         ),
-      ).then((images) => {
-        images.forEach((image, i) => {
+      )
+      .then((images) => {
+        images.forEach((image, side) => {
           context.drawImage(
-            image,
-            [1, 3, 2, 0, 1, 1][i] * size,
-            [1, 1, 1, 1, 0, 2][i] * size,
+            image, //
+            sides[side].x * size,
+            sides[side].y * size,
           );
         });
 
@@ -49,7 +59,6 @@ const Panorama: React.FC<PanoramaProps> = () => {
         canvas.style.top = '0';
         document.body.appendChild(canvas);
       });
-    });
 
     return () => {
       document.body.removeChild(canvas);

@@ -1,13 +1,13 @@
 import * as THREE from 'three';
-import { sphereImage2CubeImage } from 'src/utils/geometry';
+import { Side, sphereImage2CubeImage } from 'src/utils/geometry';
 import { D90, D180, D270, G_SZIE } from 'src/utils/consts';
 import Geometry from './geometry';
 
 const transfroms: ((plane: THREE.Object3D) => THREE.Object3D)[] = [
   (p) => p.translateZ(-G_SZIE),
   (p) => p.translateZ(G_SZIE).rotateY(D180),
-  (p) => p.translateX(G_SZIE).rotateY(D270),
   (p) => p.translateX(-G_SZIE).rotateY(D90),
+  (p) => p.translateX(G_SZIE).rotateY(D270),
   (p) => p.translateY(G_SZIE).rotateX(D90),
   (p) => p.translateY(-G_SZIE).rotateX(D270),
 ];
@@ -52,10 +52,17 @@ export default class Cube implements Geometry {
 
   setTexture(src: string) {
     loadImage(src).then(([image]) => {
-      [0, 1, 2, 3, 4, 5].forEach((face) =>
-        sphereImage2CubeImage(image, face).then((plane) => {
+      [
+        Side.FRONT,
+        Side.BACK,
+        Side.LEFT,
+        Side.RIGHT,
+        Side.UP,
+        Side.DOWN,
+      ].forEach((side) =>
+        sphereImage2CubeImage(image, side).then((plane) => {
           const texture = new THREE.TextureLoader().load(plane.src);
-          this.planes[face].setValues({ map: texture });
+          this.planes[side].setValues({ map: texture });
         }),
       );
     });
