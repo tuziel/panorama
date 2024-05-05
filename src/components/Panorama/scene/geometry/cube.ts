@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Side, sphereImage2CubeImage } from 'src/utils/geometry';
+import { Side, sphereImageToCubeImage } from 'src/utils/geometry';
 import { D90, D180, D270, G_SZIE } from 'src/utils/consts';
 import Geometry from './geometry';
 
@@ -60,7 +60,7 @@ export default class Cube implements Geometry {
         Side.FRONT,
         Side.BACK,
       ].forEach((side) =>
-        sphereImage2CubeImage(image, side).then((plane) => {
+        sphereImageToCubeImage(image, side).then((plane) => {
           const texture = new THREE.TextureLoader().load(plane.src);
           this.planes[side].setValues({ map: texture });
         }),

@@ -1,21 +1,20 @@
 import { D90, D180, D360 } from './consts';
 
+type Cartesian = [number, number, number];
+type Latlng = [number, number];
 type RGBA = [number, number, number, number];
 
 /**
  * 直角坐标转经纬度
- * @param x
- * @param y
- * @param z
- * @returns 经纬度 `lat = [-90, 90]`, `lng = [-180, 180]`
+ * @param x x 轴指向屏幕内
+ * @param y y 轴指向右
+ * @param z z 轴指向下
+ * @returns 经纬度 `lat = [-PI/2, PI/2]`, `lng = [-PI, PI]`
  */
-export function xyz2latlng(x: number, y: number, z: number): [number, number] {
-  const absx = Math.abs(x);
-  const absy = Math.abs(y);
-  const absxy = Math.sqrt(absx * absx + absy * absy);
-
-  const lat = Math.atan2(z, absxy);
-  let lng = Math.atan2(y, x);
+export function cartToLatlng(x: number, y: number, z: number): Latlng {
+  const proj = Math.sqrt(x * x + y * y);
+  const lat = Math.atan2(z, proj);
+  const lng = Math.atan2(y, x);
 
   return [lat, lng];
 }
@@ -35,20 +34,20 @@ export enum Side {
  * @param u 对应的横坐标
  * @param v 对应的纵坐标
  */
-export function uv2latlng(side: Side, u: number, v: number) {
+export function uvToLatlng(side: Side, u: number, v: number) {
   switch (side) {
     case Side.RIGHT:
-      return xyz2latlng(-u, 1, v);
+      return cartToLatlng(-u, 1, v);
     case Side.LEFT:
-      return xyz2latlng(u, -1, v);
+      return cartToLatlng(u, -1, v);
     case Side.TOP:
-      return xyz2latlng(v, u, -1);
+      return cartToLatlng(v, u, -1);
     case Side.BOTTOM:
-      return xyz2latlng(-v, u, 1);
+      return cartToLatlng(-v, u, 1);
     case Side.FRONT:
-      return xyz2latlng(1, u, v);
+      return cartToLatlng(1, u, v);
     case Side.BACK:
-      return xyz2latlng(-1, -u, v);
+      return cartToLatlng(-1, -u, v);
     // no defalut
   }
 }
@@ -59,7 +58,7 @@ export function uv2latlng(side: Side, u: number, v: number) {
  * @param side 输出的立方体面
  * @param size 输出图片大小
  */
-export function sphereImage2CubeImage(
+export function sphereImageToCubeImage(
   image: HTMLImageElement,
   side: Side,
   size?: number,
@@ -77,20 +76,20 @@ export function sphereImage2CubeImage(
   const cubeImageData = context.createImageData(outSize, outSize);
   const data = cubeImageData.data;
 
-  const coord2scale = (coord: number) => coord / (outSize / 2) - 1;
-  const scale2width = (lng: number) => (lng / D360) * width;
-  const scale2height = (lat: number) => (lat / D180) * height;
+  const coordToScale = (coord: number) => coord / (outSize / 2) - 1;
+  const scaleToX = (lng: number) => ((lng + D180) / D360) * width;
+  const scaleToY = (lat: number) => ((lat + D90) / D180) * height;
 
-  let lat, lng, w, h, iuv, color;
+  let lat, lng, x, y, iuv, color;
 
   for (let u = 0; u < outSize; u++) {
     for (let v = 0; v < outSize; v++) {
-      [lat, lng] = uv2latlng(side, coord2scale(u), coord2scale(v));
-      w = scale2width(lng + D180);
-      h = scale2height(lat + D90);
+      [lat, lng] = uvToLatlng(side, coordToScale(u), coordToScale(v));
+      x = scaleToX(lng);
+      y = scaleToY(lat);
 
       iuv = (v * outSize + u) * 4;
-      color = picker(w, h);
+      color = picker(x, y);
 
       for (let i = 0; i < 4; i++) {
         data[iuv + i] = color[i];
@@ -99,13 +98,13 @@ export function sphereImage2CubeImage(
   }
 
   context.putImageData(cubeImageData, 0, 0);
-  return canvas2image(canvas);
+  return canvasToImage(canvas);
 }
 
 /**
  * 从 canvas 中导出图片
  */
-export function canvas2image(canvas: HTMLCanvasElement) {
+export function canvasToImage(canvas: HTMLCanvasElement) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (!blob) return reject(new Error('blob is undefined'));

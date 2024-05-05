@@ -95,6 +95,9 @@ export default class Scene {
     let fov = camera.fov + ev.delta / 20;
     camera.fov = Math.max(MIN_FOV, Math.min(fov, MAX_FOV));
 
+    // const z = camera.position.z + ev.delta / 100;
+    // camera.position.z = Math.max(-6, Math.min(z, 20));
+
     this.control.updateSize();
     camera.updateProjectionMatrix();
   };
