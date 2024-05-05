@@ -1,18 +1,15 @@
-import { sphereImage2CubeImage } from 'src/utils/geometry';
 import * as THREE from 'three';
+import { sphereImage2CubeImage } from 'src/utils/geometry';
+import { D90, D180, D270, G_SZIE } from 'src/utils/consts';
 import Geometry from './geometry';
 
-const SIZE = 10;
-const D90 = Math.PI * 0.5;
-const D180 = Math.PI;
-const D270 = Math.PI * 1.5;
 const transfroms: ((plane: THREE.Object3D) => THREE.Object3D)[] = [
-  (p) => p.translateZ(-SIZE),
-  (p) => p.translateZ(SIZE).rotateY(D180),
-  (p) => p.translateX(SIZE).rotateY(D270),
-  (p) => p.translateX(-SIZE).rotateY(D90),
-  (p) => p.translateY(SIZE).rotateX(D90),
-  (p) => p.translateY(-SIZE).rotateX(D270),
+  (p) => p.translateZ(-G_SZIE),
+  (p) => p.translateZ(G_SZIE).rotateY(D180),
+  (p) => p.translateX(G_SZIE).rotateY(D270),
+  (p) => p.translateX(-G_SZIE).rotateY(D90),
+  (p) => p.translateY(G_SZIE).rotateX(D90),
+  (p) => p.translateY(-G_SZIE).rotateX(D270),
 ];
 
 function loadImage(...srcs: string[]) {
@@ -34,7 +31,7 @@ export default class Cube implements Geometry {
   private planes: THREE.MeshBasicMaterial[];
 
   constructor(src: string = '') {
-    const geometry = new THREE.PlaneGeometry(SIZE * 2, SIZE * 2);
+    const geometry = new THREE.PlaneGeometry(G_SZIE * 2, G_SZIE * 2);
     this.planes = new Array(6).fill(null).map(
       () =>
         new THREE.MeshBasicMaterial({

@@ -1,7 +1,6 @@
-const D90 = Math.PI * 0.5;
-const D180 = Math.PI;
-// const D270 = Math.PI * 1.5;
-const D360 = Math.PI * 2;
+import { D90, D180, D360 } from './consts';
+
+type RGBA = [number, number, number, number];
 
 /**
  * 直角坐标转经纬度
@@ -73,10 +72,7 @@ export function sphereImage2CubeImage(
   const { width, height } = image;
   const outSize = size || Math.min(width / 4, height / 2);
 
-  canvas.width = width;
-  canvas.height = height;
-  context.drawImage(image, 0, 0);
-  const sphereData = context.getImageData(0, 0, width, height).data;
+  const picker = createColorPicker(image);
 
   canvas.width = canvas.height = outSize;
   const cubeImageData = context.createImageData(outSize, outSize);
@@ -86,7 +82,7 @@ export function sphereImage2CubeImage(
   const scale2width = (lng: number) => (lng / D360) * width;
   const scale2height = (lat: number) => (lat / D180) * height;
 
-  let lat, lng, w, h, pr, pb, plt, plb, prt, prb, ilt, ilb, irt, irb, iuv;
+  let lat, lng, w, h, iuv, color;
 
   for (let u = 0; u < outSize; u++) {
     for (let v = 0; v < outSize; v++) {
@@ -94,32 +90,11 @@ export function sphereImage2CubeImage(
       w = scale2width(lng);
       h = scale2height(lat + D90);
 
-      pr = w % 1;
-      pb = h % 1;
-      plt = (1 - pr) * (1 - pb);
-      plb = (1 - pr) * pb;
-      prt = pr * (1 - pb);
-      prb = pr * pb;
-
-      w = Math.floor(w);
-      h = Math.floor(h);
-      ilt = h * width + w;
-      ilb = ((h + 1) % height) * width + w;
-      irt = h * width + ((w + 1) % width);
-      irb = ((h + 1) % height) * width + ((w + 1) % width);
-      iuv = v * outSize + u;
-      ilt *= 4;
-      ilb *= 4;
-      irt *= 4;
-      irb *= 4;
-      iuv *= 4;
+      iuv = (v * outSize + u) * 4;
+      color = picker(w, h);
 
       for (let i = 0; i < 4; i++) {
-        data[iuv + i] =
-          sphereData[ilt + i] * plt +
-          sphereData[ilb + i] * plb +
-          sphereData[irt + i] * prt +
-          sphereData[irb + i] * prb;
+        data[iuv + i] = color[i];
       }
     }
   }
@@ -147,4 +122,55 @@ export function canvas2image(canvas: HTMLCanvasElement) {
       reader.readAsDataURL(blob);
     });
   });
+}
+
+/**
+ * 创建支持小数坐标的取色器
+ * @param image 取色目标图片
+ */
+export function createColorPicker(image: HTMLImageElement) {
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error();
+
+  const { width, height } = image;
+  canvas.width = width;
+  canvas.height = height;
+  context.drawImage(image, 0, 0);
+  const data = context.getImageData(0, 0, width, height).data;
+
+  /**
+   * 取色器
+   * @param x 图片的 x 坐标
+   * @param y 图片的 y 坐标
+   */
+  function picker(x: number, y: number): RGBA {
+    const pr = x % 1;
+    const pb = y % 1;
+    const plt = (1 - pr) * (1 - pb);
+    const plb = (1 - pr) * pb;
+    const prt = pr * (1 - pb);
+    const prb = pr * pb;
+
+    const sx = Math.floor(x);
+    const sy = Math.floor(y);
+    let ilt = sy * width + sx;
+    let ilb = ((sy + 1) % height) * width + sx;
+    let irt = sy * width + ((sx + 1) % width);
+    let irb = ((sy + 1) % height) * width + ((sx + 1) % width);
+    ilt *= 4;
+    ilb *= 4;
+    irt *= 4;
+    irb *= 4;
+
+    return [0, 1, 2, 3].map(
+      (i) =>
+        data[ilt + i] * plt +
+        data[ilb + i] * plb +
+        data[irt + i] * prt +
+        data[irb + i] * prb,
+    ) as RGBA;
+  }
+
+  return picker;
 }

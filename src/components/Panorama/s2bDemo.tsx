@@ -33,7 +33,9 @@ const Panorama: React.FC<PanoramaProps> = () => {
 
     loadImage(imageUrl).then(([image]) => {
       Promise.all(
-        [0, 1, 2, 3, 4, 5].map((face) => sphereImage2CubeImage(image, face)),
+        [0, 1, 2, 3, 4, 5].map((face) =>
+          sphereImage2CubeImage(image, face, size),
+        ),
       ).then((images) => {
         images.forEach((image, i) => {
           context.drawImage(
