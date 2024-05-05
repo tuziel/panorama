@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { D180, D270, G_SZIE } from 'src/utils/consts';
+import { D90, G_SZIE } from 'src/utils/consts';
 import Geometry from './geometry';
 
 export default class Sphere implements Geometry {
@@ -11,8 +11,7 @@ export default class Sphere implements Geometry {
     this.material = new THREE.MeshBasicMaterial({ side: THREE.BackSide });
     this.setTexture(src);
     this.mesh = new THREE.Mesh(geometry, this.material);
-    this.mesh.rotation.x = D180;
-    this.mesh.rotation.y = D270;
+    this.mesh.rotation.y = D90;
   }
 
   getMesh() {
@@ -21,7 +20,8 @@ export default class Sphere implements Geometry {
 
   setTexture(src: string) {
     const texture = new THREE.TextureLoader().load(src);
-    texture.flipY = false;
+    texture.matrixAutoUpdate = false;
+    texture.matrix = new THREE.Matrix3().translate(-1, 0).scale(-1, 1);
     this.material.setValues({ map: texture });
   }
 }
