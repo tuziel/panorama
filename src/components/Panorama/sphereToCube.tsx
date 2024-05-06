@@ -1,10 +1,6 @@
-import { useEffect, useRef } from 'react';
-import { Side, sphereImageToCubeImage } from '../../utils/geometry';
-import imageUrl from '../../assets/demo1.jpg';
-
-interface PanoramaProps {
-  src: string;
-}
+import { useContext, useEffect, useRef } from 'react';
+import PanoramaControlContext from 'src/context/PanoramaControlContext';
+import { Side, sphereImageToCubeImage } from 'src/utils/geometry';
 
 const sides = [
   { side: Side.RIGHT, x: 2, y: 1 },
@@ -15,7 +11,8 @@ const sides = [
   { side: Side.BACK, x: 3, y: 1 },
 ];
 
-const Panorama: React.FC<PanoramaProps> = () => {
+const Panorama: React.FC = () => {
+  const { src } = useContext(PanoramaControlContext);
   const refCanvas = useRef<HTMLCanvasElement>(null);
 
   function loadImage(...srcs: string[]) {
@@ -33,14 +30,15 @@ const Panorama: React.FC<PanoramaProps> = () => {
   }
 
   useEffect(() => {
-    let canvas: HTMLCanvasElement;
-    canvas = document.createElement('canvas');
+    if (!src) return;
+
+    const canvas = refCanvas.current!;
     const context = canvas.getContext('2d')!;
     const size = 300;
     canvas.width = size * 4;
     canvas.height = size * 3;
 
-    loadImage(imageUrl)
+    loadImage(src)
       .then(([image]) =>
         Promise.all(
           sides.map(({ side }) => sphereImageToCubeImage(image, side, size)),
@@ -54,16 +52,8 @@ const Panorama: React.FC<PanoramaProps> = () => {
             sides[side].y * size,
           );
         });
-
-        canvas.style.position = 'absolute';
-        canvas.style.top = '0';
-        document.body.appendChild(canvas);
       });
-
-    return () => {
-      document.body.removeChild(canvas);
-    };
-  }, []);
+  }, [src]);
 
   return <canvas className="canvas" ref={refCanvas}></canvas>;
 };
