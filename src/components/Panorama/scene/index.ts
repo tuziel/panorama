@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Object3D } from 'three';
+import { D90, D180 } from 'src/utils/consts';
 import Control, {
   SceneDragEvent,
   SceneDragInertiaEvent,
@@ -7,9 +8,14 @@ import Control, {
   SceneResizeEvent,
 } from './control';
 
-const SIZE = 10;
-
-/** 3D 物件的半径 */
+// 视角
+const DEFAULT_FOV = 90;
+const MIN_FOV = 10;
+const MAX_FOV = 100;
+// 视点
+// const DEFALUT_Z = 0;
+// const MIN_Z = -6;
+// const MAX_Z = 20;
 
 export default class Scene {
   private canvas;
@@ -22,14 +28,6 @@ export default class Scene {
   private rafId = -1;
   // 拖拽时每 px 旋转的弧度
   private step = 0;
-  // 视角
-  private fov = 90;
-  // 视点
-  private z = 0;
-  private minFov = 10;
-  private maxFov = 150;
-  private minZ = -6;
-  private maxZ = 20;
 
   /**
    * 构造全景图场景
@@ -38,7 +36,7 @@ export default class Scene {
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(this.fov);
+    this.camera = new THREE.PerspectiveCamera(DEFAULT_FOV);
     this.renderer = new THREE.WebGLRenderer({ canvas: canvas });
 
     const control = new Control(this.canvas);
@@ -74,33 +72,33 @@ export default class Scene {
   private updateSize = (size: SceneResizeEvent) => {
     const camera = this.camera;
     const { width, height } = size;
-    this.step = (camera.fov * (Math.PI / 180)) / height;
+    this.step = (camera.fov * (D180 / 180)) / height;
     this.renderer.setSize(width, height);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
   };
 
   private drag = (ev: SceneDragEvent | SceneDragInertiaEvent) => {
-    const { scene, camera, step } = this;
+    const { scene, step } = this;
 
-    const distance = Math.min(camera.position.z, SIZE);
-    const alpha = camera.fov * (Math.PI / 180);
-    const beta = Math.asin((distance * Math.sin(alpha)) / SIZE);
-    const deltaX = -ev.deltaY * step * (beta / alpha + 1);
-    const deltaY = -ev.deltaX * step * (beta / alpha + 1);
+    const deltaX = -ev.deltaY * step;
+    const deltaY = -ev.deltaX * step;
 
     scene.rotation.x += deltaX;
-    scene.rotation.x = Math.max(
-      Math.PI * -0.5,
-      Math.min(scene.rotation.x, Math.PI * 0.5),
-    );
+    scene.rotation.x = Math.max(-D90, Math.min(scene.rotation.x, D90));
     scene.rotation.y += deltaY;
   };
 
   private wheel = (ev: SceneWheelEvent) => {
     const camera = this.camera;
-    const z = camera.position.z + ev.delta / 100;
-    camera.position.z = Math.max(-6, Math.min(z, 20));
+
+    let fov = camera.fov + ev.delta / 20;
+    camera.fov = Math.max(MIN_FOV, Math.min(fov, MAX_FOV));
+
+    // const z = camera.position.z + ev.delta / 100;
+    // camera.position.z = Math.max(-6, Math.min(z, 20));
+
+    this.control.updateSize();
     camera.updateProjectionMatrix();
   };
 }

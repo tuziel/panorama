@@ -1,6 +1,7 @@
-// import { useEffect, useRef } from 'react';
-import { useContext } from 'react';
+import { useContext, useEffect } from 'react';
 import PanoramaControlContext from 'src/context/PanoramaControlContext';
+import imageUrl from 'src/assets/demo1.jpg';
+
 import './index.css';
 
 const Menu: React.FC = () => {
@@ -22,6 +23,10 @@ const Menu: React.FC = () => {
     };
     reader.readAsDataURL(file);
   }
+
+  useEffect(() => {
+    setSrc(imageUrl);
+  }, [setSrc]);
 
   return (
     <div className="Menu">
