@@ -23,14 +23,15 @@ export default class Scene {
   private camera;
   private renderer;
   private control;
+
   private width = 0;
   private height = 0;
+
+  // 镜头朝向
   private direction = new THREE.Spherical(1, D90, D180);
 
   // 定时器 id;
   private rafId = -1;
-  // 拖拽时每 px 旋转的弧度
-  private step = 0;
 
   /**
    * 构造全景图场景
@@ -77,17 +78,16 @@ export default class Scene {
     const { width, height } = size;
     this.width = width;
     this.height = height;
-    this.step = (camera.fov * (D180 / 180)) / height;
     this.renderer.setSize(width, height);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
   };
 
-  private updateDirection(theta: number, phi: number) {
+  private updateDirection(phi: number, theta: number) {
     const { camera, direction } = this;
 
-    direction.theta = theta;
     direction.phi = phi;
+    direction.theta = theta;
     direction.makeSafe();
 
     const vec = new THREE.Vector3().setFromSpherical(this.direction);
@@ -95,12 +95,19 @@ export default class Scene {
   }
 
   private drag = (ev: SceneDragEvent | SceneDragInertiaEvent) => {
-    const { direction, step } = this;
+    const { camera, direction, height } = this;
+
+    // 拖拽时每 px 旋转的弧度
+    const step = (camera.fov * (D180 / 180)) / height;
 
     const deltaX = -ev.deltaX * step;
     const deltaY = -ev.deltaY * step;
+    // 倾斜角补偿
+    const scaleX = Math.max(Math.sin(D90 / 3), Math.sin(direction.phi));
+    const theta = direction.theta - deltaX / scaleX;
+    const phi = direction.phi + deltaY;
 
-    this.updateDirection(direction.theta - deltaX, direction.phi + deltaY);
+    this.updateDirection(phi, theta);
   };
 
   private wheel = (ev: SceneWheelEvent) => {
