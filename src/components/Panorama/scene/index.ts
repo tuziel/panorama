@@ -12,10 +12,18 @@ import Control, {
 const DEFAULT_FOV = 90;
 const MIN_FOV = 10;
 const MAX_FOV = 100;
+const DEFAULT_PHI = D90;
+const DEFAULT_THETA = D180;
 // 视点
 // const DEFALUT_Z = 0;
 // const MIN_Z = -6;
 // const MAX_Z = 20;
+
+/** 场景配置 */
+type SceneOptions = {
+  /** 场景尺寸是否跟随屏幕尺寸 */
+  autoSize: boolean;
+};
 
 export default class Scene {
   private canvas;
@@ -28,28 +36,48 @@ export default class Scene {
   private height = 0;
 
   // 镜头朝向
-  private direction = new THREE.Spherical(1, D90, D180);
+  private direction;
 
   // 定时器 id;
   private rafId = -1;
+
+  /** 场景尺寸是否跟随屏幕尺寸 */
+  private __autoSize = true;
+  get autoSize() {
+    return this.__autoSize;
+  }
+  set autoSize(val: boolean) {
+    this.__autoSize = val;
+    if (val) {
+      this.control.on('resize', this.setSize);
+    } else {
+      this.control.off('resize', this.setSize);
+    }
+  }
 
   /**
    * 构造全景图场景
    * @param canvas 绑定的 canvas 元素
    */
-  constructor(canvas: HTMLCanvasElement) {
+  constructor(canvas: HTMLCanvasElement, options?: SceneOptions) {
     this.canvas = canvas;
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(DEFAULT_FOV);
     this.renderer = new THREE.WebGLRenderer({ canvas: canvas });
 
+    const autoSize = options?.autoSize ?? true;
     const control = new Control(this.canvas);
     control.on('drag', this.drag);
     control.on('dragInertia', this.drag);
     control.on('wheel', this.wheel);
-    control.on('resize', this.updateSize);
-    control.updateSize();
+    if (autoSize) {
+      control.on('resize', this.setSize);
+      control.updateSize();
+    } else {
+      this.setSize(canvas);
+    }
     this.control = control;
+    this.direction = new THREE.Spherical(1, DEFAULT_PHI, DEFAULT_THETA);
 
     const raf = (fn: () => void) => {
       this.rafId = requestAnimationFrame(() => raf(fn));
@@ -73,7 +101,7 @@ export default class Scene {
     return this;
   }
 
-  private updateSize = (size: SceneResizeEvent) => {
+  public setSize = (size: SceneResizeEvent) => {
     const camera = this.camera;
     const { width, height } = size;
     this.width = width;
@@ -83,7 +111,7 @@ export default class Scene {
     camera.updateProjectionMatrix();
   };
 
-  private updateDirection(phi: number, theta: number) {
+  public setDirection(phi: number, theta: number) {
     const { camera, direction } = this;
 
     direction.phi = phi;
@@ -107,7 +135,7 @@ export default class Scene {
     const theta = direction.theta - deltaX / scaleX;
     const phi = direction.phi + deltaY;
 
-    this.updateDirection(phi, theta);
+    this.setDirection(phi, theta);
   };
 
   private wheel = (ev: SceneWheelEvent) => {
