@@ -4,12 +4,12 @@ import { D90, D180, D270, G_SZIE } from 'src/utils/consts';
 import Geometry from './geometry';
 
 const transfroms: ((plane: THREE.Object3D) => THREE.Object3D)[] = [
-  (p) => p.translateZ(-G_SZIE),
-  (p) => p.translateZ(G_SZIE).rotateY(D180),
-  (p) => p.translateX(-G_SZIE).rotateY(D90),
   (p) => p.translateX(G_SZIE).rotateY(D270),
+  (p) => p.translateX(-G_SZIE).rotateY(D90),
   (p) => p.translateY(G_SZIE).rotateX(D90),
   (p) => p.translateY(-G_SZIE).rotateX(D270),
+  (p) => p.translateZ(-G_SZIE),
+  (p) => p.translateZ(G_SZIE).rotateY(D180),
 ];
 
 function loadImage(...srcs: string[]) {
