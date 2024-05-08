@@ -23,6 +23,9 @@ export default class Scene {
   private camera;
   private renderer;
   private control;
+  private width = 0;
+  private height = 0;
+  private direction = new THREE.Spherical(1, D90, D180);
 
   // 定时器 id;
   private rafId = -1;
@@ -72,21 +75,32 @@ export default class Scene {
   private updateSize = (size: SceneResizeEvent) => {
     const camera = this.camera;
     const { width, height } = size;
+    this.width = width;
+    this.height = height;
     this.step = (camera.fov * (D180 / 180)) / height;
     this.renderer.setSize(width, height);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
   };
 
+  private updateDirection(theta: number, phi: number) {
+    const { camera, direction } = this;
+
+    direction.theta = theta;
+    direction.phi = phi;
+    direction.makeSafe();
+
+    const vec = new THREE.Vector3().setFromSpherical(this.direction);
+    camera.lookAt(vec);
+  }
+
   private drag = (ev: SceneDragEvent | SceneDragInertiaEvent) => {
-    const { scene, step } = this;
+    const { direction, step } = this;
 
-    const deltaX = -ev.deltaY * step;
-    const deltaY = -ev.deltaX * step;
+    const deltaX = -ev.deltaX * step;
+    const deltaY = -ev.deltaY * step;
 
-    scene.rotation.x += deltaX;
-    scene.rotation.x = Math.max(-D90, Math.min(scene.rotation.x, D90));
-    scene.rotation.y += deltaY;
+    this.updateDirection(direction.theta - deltaX, direction.phi + deltaY);
   };
 
   private wheel = (ev: SceneWheelEvent) => {
