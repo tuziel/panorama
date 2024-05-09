@@ -119,7 +119,7 @@ export default class Scene {
     direction.makeSafe();
 
     const vec = new THREE.Vector3().setFromSpherical(this.direction);
-    camera.lookAt(vec);
+    camera.lookAt(vec.add(camera.position));
   }
 
   private drag = (ev: SceneDragEvent | SceneDragInertiaEvent) => {
