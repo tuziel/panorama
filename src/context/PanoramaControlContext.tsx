@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 
+type Props = {
+  children: React.ReactNode;
+};
+
 const nop = () => {
   /* nop */
 };
@@ -16,7 +20,9 @@ const PanoramaControlContext = React.createContext<PanoramaControlContextValue>(
   },
 );
 
-export const PanoramaControlContextProvider: React.FC = ({ children }) => {
+export const PanoramaControlContextProvider: React.FC<Props> = ({
+  children,
+}) => {
   const [src, setSrc] = useState<string>('');
 
   return (

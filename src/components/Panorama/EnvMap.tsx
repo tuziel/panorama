@@ -1,17 +1,17 @@
 import * as THREE from 'three';
 import { useEffect, useRef } from 'react';
-// import PanoramaControlContext from 'src/context/PanoramaControlContext';
-import { D90, G_SZIE } from 'src/utils/consts';
+// import PanoramaControlContext from '@/context/PanoramaControlContext';
+import { D90, G_SZIE } from '@/utils/consts';
 import Scene from './scene';
 
-import './index.css';
+import styles from './scene.module.css';
 
-import urlR from 'src/assets/demo1_R.jpg';
-import urlL from 'src/assets/demo1_L.jpg';
-import urlU from 'src/assets/demo1_U.jpg';
-import urlD from 'src/assets/demo1_D.jpg';
-import urlF from 'src/assets/demo1_F.jpg';
-import urlB from 'src/assets/demo1_B.jpg';
+import urlR from '@/assets/demo1_R.jpg';
+import urlL from '@/assets/demo1_L.jpg';
+import urlU from '@/assets/demo1_U.jpg';
+import urlD from '@/assets/demo1_D.jpg';
+import urlF from '@/assets/demo1_F.jpg';
+import urlB from '@/assets/demo1_B.jpg';
 
 const Panorama: React.FC = () => {
   // const { src } = useContext(PanoramaControlContext);
@@ -23,12 +23,12 @@ const Panorama: React.FC = () => {
 
     const geometry = new THREE.SphereGeometry(G_SZIE, 180, 90);
     const cuebTexture = new THREE.CubeTextureLoader().load([
-      urlR,
-      urlL,
-      urlD,
-      urlU,
-      urlF,
-      urlB,
+      urlR.src,
+      urlL.src,
+      urlD.src,
+      urlU.src,
+      urlF.src,
+      urlB.src,
     ]);
     const material = new THREE.MeshBasicMaterial({
       side: THREE.BackSide,
@@ -48,7 +48,7 @@ const Panorama: React.FC = () => {
   //   if (geometry.current) geometry.current.setTexture(src);
   // }, [src]);
 
-  return <canvas className="canvas" ref={refCanvas}></canvas>;
+  return <canvas className={styles.canvas} ref={refCanvas}></canvas>;
 };
 
 export default Panorama;

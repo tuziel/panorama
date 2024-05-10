@@ -1,12 +1,13 @@
 import * as THREE from 'three';
-import { Object3D } from 'three';
-import { D90, D180 } from 'src/utils/consts';
-import Control, {
+import type { Object3D } from 'three';
+import { D90, D180 } from '@/utils/consts';
+import type {
   SceneDragEvent,
   SceneDragInertiaEvent,
   SceneWheelEvent,
   SceneResizeEvent,
 } from './control';
+import Control from './control';
 
 // 视角
 const DEFAULT_FOV = 90;
@@ -141,7 +142,7 @@ export default class Scene {
   private wheel = (ev: SceneWheelEvent) => {
     const camera = this.camera;
 
-    let fov = camera.fov + ev.delta / 20;
+    const fov = camera.fov + ev.delta / 20;
     camera.fov = Math.max(MIN_FOV, Math.min(fov, MAX_FOV));
 
     // const z = camera.position.z + ev.delta / 100;

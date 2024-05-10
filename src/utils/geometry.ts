@@ -163,7 +163,7 @@ export function cubeImageToSphereImage(
     {
       side: Side.BOTTOM,
       picker: createColorPicker(bottom),
-      mapping: (x, y, _) => [y, -x],
+      mapping: (x, y) => [y, -x],
     },
     {
       side: Side.BACK,
@@ -178,7 +178,7 @@ export function cubeImageToSphereImage(
     {
       side: Side.TOP,
       picker: createColorPicker(top),
-      mapping: (x, y, _) => [y, x],
+      mapping: (x, y) => [y, x],
     },
   ];
 

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { D90, G_SZIE } from 'src/utils/consts';
-import Geometry from './geometry';
+import { D90, G_SZIE } from '@/utils/consts';
+import type Geometry from './geometry';
 
 export default class Sphere implements Geometry {
   private mesh: THREE.Mesh;

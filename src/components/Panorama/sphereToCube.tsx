@@ -1,6 +1,6 @@
 import { useContext, useEffect, useRef } from 'react';
-import PanoramaControlContext from 'src/context/PanoramaControlContext';
-import { Side, sphereImageToCubeImage } from 'src/utils/geometry';
+import PanoramaControlContext from '@/context/PanoramaControlContext';
+import { Side, sphereImageToCubeImage } from '@/utils/geometry';
 
 const sides = [
   { side: Side.RIGHT, x: 2, y: 1 },
@@ -20,7 +20,7 @@ const Panorama: React.FC = () => {
       srcs.map(
         (src) =>
           new Promise((resolve, reject) => {
-            var image = new Image();
+            const image = new Image();
             image.onload = () => resolve(image);
             image.onerror = reject;
             image.src = src;

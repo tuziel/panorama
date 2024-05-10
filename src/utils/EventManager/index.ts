@@ -1,9 +1,10 @@
-import EventEmitter from './EventEmitter';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import type EventEmitter from './EventEmitter';
 
 export type EventData<E> = E extends EventEmitter<infer R> ? R : never;
 
 export default class EventManager<
-  E extends { [x: string]: EventEmitter<any> }
+  E extends { [x: string]: EventEmitter<any> },
 > {
   private events: E;
 

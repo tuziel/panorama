@@ -1,5 +1,6 @@
-import EventManager, { EventData } from '../../../utils/EventManager';
-import EventEmitter from '../../../utils/EventManager/EventEmitter';
+import type { EventData } from '@/utils/EventManager';
+import EventManager from '@/utils/EventManager';
+import EventEmitter from '@/utils/EventManager/EventEmitter';
 
 /** 最少采样次数 */
 const MIN_SAMPLING_LENGTH = 4;
@@ -168,7 +169,7 @@ export default class Control {
     let vy = 0;
 
     if (path.length >= MIN_SAMPLING_LENGTH) {
-      let [lastX, lastY, lastTime] = path.pop()!;
+      const [lastX, lastY, lastTime] = path.pop()!;
       let [x, y, t, dt] = [0, 0, 0, 0];
 
       while (path.length) {

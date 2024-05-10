@@ -1,6 +1,6 @@
 import { useContext, useEffect, useRef } from 'react';
-import PanoramaControlContext from 'src/context/PanoramaControlContext';
-import { cubeImageToSphereImage } from 'src/utils/geometry';
+import PanoramaControlContext from '@/context/PanoramaControlContext';
+import { cubeImageToSphereImage } from '@/utils/geometry';
 
 import urlR from 'src/assets/demo1_R.jpg';
 import urlL from 'src/assets/demo1_L.jpg';
@@ -14,7 +14,7 @@ function loadImage(...srcs: string[]) {
     srcs.map(
       (src) =>
         new Promise((resolve, reject) => {
-          var image = new Image();
+          const image = new Image();
           image.onload = () => resolve(image);
           image.onerror = reject;
           image.src = src;
@@ -36,7 +36,7 @@ const Panorama: React.FC = () => {
     canvas.width = size * 4;
     canvas.height = size * 2;
 
-    loadImage(urlR, urlL, urlU, urlD, urlF, urlB)
+    loadImage(urlR.src, urlL.src, urlU.src, urlD.src, urlF.src, urlB.src)
       .then(([r, l, u, d, f, b]) =>
         cubeImageToSphereImage(r, l, u, d, f, b, size),
       )

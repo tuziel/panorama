@@ -1,9 +1,10 @@
 import { useContext, useEffect, useRef } from 'react';
-import { Geometry, Sphere } from './scene/geometry';
+import type { Geometry } from './scene/geometry';
+import { Sphere } from './scene/geometry';
 import Scene from './scene';
 
-import './index.css';
-import PanoramaControlContext from 'src/context/PanoramaControlContext';
+import styles from './scene.module.css';
+import PanoramaControlContext from '@/context/PanoramaControlContext';
 
 const Panorama: React.FC = () => {
   const { src } = useContext(PanoramaControlContext);
@@ -27,7 +28,7 @@ const Panorama: React.FC = () => {
     if (geometry.current) geometry.current.setTexture(src);
   }, [src]);
 
-  return <canvas className="canvas" ref={refCanvas}></canvas>;
+  return <canvas className={styles.canvas} ref={refCanvas}></canvas>;
 };
 
 export default Panorama;

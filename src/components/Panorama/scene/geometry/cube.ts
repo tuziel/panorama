@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { Side, sphereImageToCubeImage } from 'src/utils/geometry';
-import { D90, D180, D270, G_SZIE } from 'src/utils/consts';
-import Geometry from './geometry';
+import { Side, sphereImageToCubeImage } from '@/utils/geometry';
+import { D90, D180, D270, G_SZIE } from '@/utils/consts';
+import type Geometry from './geometry';
 
 const transfroms: ((plane: THREE.Object3D) => THREE.Object3D)[] = [
   (p) => p.translateX(G_SZIE).rotateY(D270),
@@ -17,7 +17,7 @@ function loadImage(...srcs: string[]) {
     srcs.map(
       (src) =>
         new Promise((resolve, reject) => {
-          var image = new Image();
+          const image = new Image();
           image.onload = () => resolve(image);
           image.onerror = reject;
           image.src = src;
