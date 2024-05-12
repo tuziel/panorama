@@ -1,14 +1,9 @@
 import { D90, D180, D360 } from './consts';
 
-type Cartesian = [number, number, number];
+type Cartesian2 = [number, number];
+type Cartesian3 = [number, number, number];
 type Latlng = [number, number];
 type RGBA = [number, number, number, number];
-
-type CubeImageSide = {
-  side: Side;
-  picker: (x: number, y: number) => RGBA;
-  mapping: (x: number, y: number, z: number) => [number, number];
-};
 
 export enum Side {
   'RIGHT',
@@ -39,14 +34,23 @@ export function cartToLatlng(x: number, y: number, z: number): Latlng {
  * @param lat 纬度 (与 x 轴的夹角)
  * @param lng 经度 (位矢在 x-y 面的投影与 x 轴的夹角)
  */
-export function latlngToCart(lat: number, lng: number): Cartesian {
+export function latlngToCart(lat: number, lng: number): Cartesian3 {
   const x = Math.cos(lng);
   const y = Math.sin(lng);
   const z = Math.tan(lat);
   const scale = Math.max(Math.abs(x), Math.abs(y), Math.abs(z));
 
-  return [x, y, z].map((n) => n / scale) as Cartesian;
+  return [x, y, z].map((n) => n / scale) as Cartesian3;
 }
+
+const uvToLatlngMapping: ((...args: Cartesian2) => Cartesian3)[] = [
+  (u, v) => [-u, 1, v],
+  (u, v) => [u, -1, v],
+  (u, v) => [v, u, -1],
+  (u, v) => [-v, u, 1],
+  (u, v) => [1, u, v],
+  (u, v) => [-1, -u, v],
+];
 
 /**
  * 获取立方体面坐标对应的经纬度
@@ -55,21 +59,35 @@ export function latlngToCart(lat: number, lng: number): Cartesian {
  * @param v 对应的纵坐标
  */
 export function uvToLatlng(side: Side, u: number, v: number) {
-  switch (side) {
-    case Side.RIGHT:
-      return cartToLatlng(-u, 1, v);
-    case Side.LEFT:
-      return cartToLatlng(u, -1, v);
-    case Side.TOP:
-      return cartToLatlng(v, u, -1);
-    case Side.BOTTOM:
-      return cartToLatlng(-v, u, 1);
-    case Side.FRONT:
-      return cartToLatlng(1, u, v);
-    case Side.BACK:
-      return cartToLatlng(-1, -u, v);
-    // no defalut
-  }
+  const cart = uvToLatlngMapping[side](u, v);
+  return cartToLatlng(...cart);
+}
+
+const latlngToUvMapping: ((...args: Cartesian3) => [Side, ...Cartesian2])[] = [
+  (_, y, z) => [Side.FRONT, y, z],
+  (x, _, z) => [Side.RIGHT, -x, z],
+  (x, y) => [Side.BOTTOM, y, -x],
+  (_, y, z) => [Side.BACK, -y, z],
+  (x, _, z) => [Side.LEFT, x, z],
+  (x, y) => [Side.TOP, y, x],
+];
+
+/**
+ * 经纬度转六面图坐标
+ * @param lat 纬度
+ * @param lng 经度
+ */
+export function latlngToUV(lat: number, lng: number) {
+  const cart = latlngToCart(lat, lng);
+  // [ 1,  0,  0] +x 0b000001
+  // [ 0,  1,  0] +y 0b000010
+  // [ 0,  0,  1] +z 0b000100
+  // [-1,  0,  0] -x 0b001111
+  // [ 0, -1,  0] -y 0b011110
+  // [ 0,  0, -1] -z 0b111100
+  const vecSign = cart.reduce((s, v, i) => s | ((v & 0b1111) << i), 0);
+  const index = countBits(vecSign) - 1;
+  return latlngToUvMapping[index](...latlngToCart(lat, lng));
 }
 
 /**
@@ -83,42 +101,36 @@ export function sphereImageToCubeImage(
   side: Side,
   size?: number,
 ) {
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('2d');
-  if (!context) return Promise.reject();
-
   const { width, height } = image;
   const outSize = size || Math.min(width / 4, height / 2);
 
   const picker = createColorPicker(image);
 
-  canvas.width = canvas.height = outSize;
-  const imageData = context.createImageData(outSize, outSize);
+  const imageData = new ImageData(outSize, outSize);
   const data = imageData.data;
 
   const coordToScale = (coord: number) => coord / (outSize / 2) - 1;
   const scaleToX = (lng: number) => ((lng + D180) / D360) * width;
   const scaleToY = (lat: number) => ((lat + D90) / D180) * height;
 
-  let lat, lng, x, y, iuv, color;
+  let lat, lng, x, y, iData, color;
 
   for (let u = 0; u < outSize; u++) {
     for (let v = 0; v < outSize; v++) {
       [lat, lng] = uvToLatlng(side, coordToScale(u), coordToScale(v));
+
       x = scaleToX(lng);
       y = scaleToY(lat);
-
-      iuv = (v * outSize + u) * 4;
       color = picker(x, y);
 
+      iData = (v * outSize + u) * 4;
       for (let i = 0; i < 4; i++) {
-        data[iuv + i] = color[i];
+        data[iData + i] = color[i];
       }
     }
   }
 
-  context.putImageData(imageData, 0, 0);
-  return canvasToImage(canvas);
+  return imageData;
 }
 
 /**
@@ -140,89 +152,46 @@ export function cubeImageToSphereImage(
   back: HTMLImageElement,
   size?: number,
 ) {
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('2d');
-  if (!context) return Promise.reject();
-
   const { width, height } = right;
   const baseSize = Math.min(width, height);
   const outWidth = (size || baseSize) * 4;
   const outHeight = (size || baseSize) * 2;
 
-  const sides: CubeImageSide[] = [
-    {
-      side: Side.FRONT,
-      picker: createColorPicker(front),
-      mapping: (_, y, z) => [y, z],
-    },
-    {
-      side: Side.RIGHT,
-      picker: createColorPicker(right),
-      mapping: (x, _, z) => [-x, z],
-    },
-    {
-      side: Side.BOTTOM,
-      picker: createColorPicker(bottom),
-      mapping: (x, y) => [y, -x],
-    },
-    {
-      side: Side.BACK,
-      picker: createColorPicker(back),
-      mapping: (_, y, z) => [-y, z],
-    },
-    {
-      side: Side.LEFT,
-      picker: createColorPicker(left),
-      mapping: (x, _, z) => [x, z],
-    },
-    {
-      side: Side.TOP,
-      picker: createColorPicker(top),
-      mapping: (x, y) => [y, x],
-    },
+  const pickers = [
+    createColorPicker(right),
+    createColorPicker(left),
+    createColorPicker(top),
+    createColorPicker(bottom),
+    createColorPicker(front),
+    createColorPicker(back),
   ];
 
-  canvas.width = outWidth;
-  canvas.height = outHeight;
-  const imageData = context.createImageData(outWidth, outHeight);
+  const imageData = new ImageData(outWidth, outHeight);
   const data = imageData.data;
 
   const coordToLat = (coord: number) => (coord / outHeight) * D180 - D90;
   const coordToLng = (coord: number) => (coord / outWidth) * D360 - D180;
-  const scaleToX = (x: number) => ((x + 1) / 2) * baseSize;
-  const scaleToY = (y: number) => ((y + 1) / 2) * baseSize;
+  const scaleToX = (u: number) => ((u + 1) / 2) * baseSize;
+  const scaleToY = (v: number) => ((v + 1) / 2) * baseSize;
 
-  let lat, lng, cart, vecSign, index, x, y, side, iuv, color;
+  let side, u, v, x, y, iData, color;
 
-  for (let u = 0; u < outWidth; u++) {
-    for (let v = 0; v < outHeight; v++) {
-      lng = coordToLng(u);
-      lat = coordToLat(v);
-      cart = latlngToCart(lat, lng);
-      // [ 1,  0,  0] +x 0b000001
-      // [ 0,  1,  0] +y 0b000010
-      // [ 0,  0,  1] +z 0b000100
-      // [-1,  0,  0] -x 0b001111
-      // [ 0, -1,  0] -y 0b011110
-      // [ 0,  0, -1] -z 0b111100
-      vecSign = cart.reduce((s, v, i) => s | ((v & 0b1111) << i), 0);
-      index = countBits(vecSign) - 1;
+  for (let oX = 0; oX < outWidth; oX++) {
+    for (let oY = 0; oY < outHeight; oY++) {
+      [side, u, v] = latlngToUV(coordToLat(oY), coordToLng(oX));
 
-      side = sides[index]!;
-      [x, y] = side.mapping(...cart);
-      x = scaleToX(x);
-      y = scaleToY(y);
-      color = side.picker(x, y);
-      iuv = (v * outWidth + u) * 4;
+      x = scaleToX(u);
+      y = scaleToY(v);
+      color = pickers[side](x, y);
 
+      iData = (oY * outWidth + oX) * 4;
       for (let i = 0; i < 4; i++) {
-        data[iuv + i] = color[i];
+        data[iData + i] = color[i];
       }
     }
   }
 
-  context.putImageData(imageData, 0, 0);
-  return canvasToImage(canvas);
+  return imageData;
 }
 
 /**
@@ -247,19 +216,50 @@ export function canvasToImage(canvas: HTMLCanvasElement) {
 }
 
 /**
- * 创建支持小数坐标的取色器
- * @param image 取色目标图片
+ * 将图片转为 ImageData
+ * @param image 图片
  */
-export function createColorPicker(image: HTMLImageElement) {
+export function imageToData(image: HTMLImageElement) {
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
-  if (!context) throw new Error();
+  if (!context) throw new Error('Context2D is not support');
 
   const { width, height } = image;
   canvas.width = width;
   canvas.height = height;
+
   context.drawImage(image, 0, 0);
-  const data = context.getImageData(0, 0, width, height).data;
+  return context.getImageData(0, 0, width, height);
+}
+
+/**
+ * 加载图片
+ * @param src 图片的 src
+ */
+export function loadImage(src: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = src;
+  });
+}
+
+/**
+ * 加载图片并创建 ImageData
+ * @param src 图片的 src
+ */
+export function loadImageData(src: string) {
+  return loadImage(src).then(imageToData);
+}
+
+/**
+ * 创建支持小数坐标的取色器
+ * @param image 取色目标图片
+ */
+export function createColorPicker(image: HTMLImageElement) {
+  const { width, height } = image;
+  const data = imageToData(image).data;
 
   /**
    * 取色器

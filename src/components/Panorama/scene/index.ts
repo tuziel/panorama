@@ -15,10 +15,6 @@ const MIN_FOV = 10;
 const MAX_FOV = 100;
 const DEFAULT_PHI = D90;
 const DEFAULT_THETA = D180;
-// 视点
-// const DEFALUT_Z = 0;
-// const MIN_Z = -6;
-// const MAX_Z = 20;
 
 /** 场景配置 */
 type SceneOptions = {
@@ -141,12 +137,18 @@ export default class Scene {
 
   private wheel = (ev: SceneWheelEvent) => {
     const camera = this.camera;
+    // const { phi, theta } = this.direction;
 
     const fov = camera.fov + ev.delta / 20;
     camera.fov = Math.max(MIN_FOV, Math.min(fov, MAX_FOV));
 
-    // const z = camera.position.z + ev.delta / 100;
-    // camera.position.z = Math.max(-6, Math.min(z, 20));
+    // const delta = ev.delta / 100;
+    // const x = Math.sin(phi) * Math.sin(theta) * delta;
+    // const y = Math.cos(phi) * delta;
+    // const z = Math.sin(phi) * Math.cos(theta) * delta;
+    // camera.position.x -= x;
+    // camera.position.y -= y;
+    // camera.position.z -= z;
 
     this.control.updateSize();
     camera.updateProjectionMatrix();

@@ -6,12 +6,12 @@ export default class Sphere implements Geometry {
   private mesh: THREE.Mesh;
   private material: THREE.MeshBasicMaterial;
 
-  constructor(src: string = '') {
+  constructor(src?: string) {
     const geometry = new THREE.SphereGeometry(G_SZIE, 180, 90);
-    this.material = new THREE.MeshBasicMaterial({ side: THREE.BackSide });
-    this.setTexture(src);
+    geometry.scale(1, 1, -1).rotateY(D90);
+    this.material = new THREE.MeshBasicMaterial();
     this.mesh = new THREE.Mesh(geometry, this.material);
-    this.mesh.rotation.y = D90;
+    if (src) this.setTexture(src);
   }
 
   getMesh() {
@@ -20,8 +20,6 @@ export default class Sphere implements Geometry {
 
   setTexture(src: string) {
     const texture = new THREE.TextureLoader().load(src);
-    texture.matrixAutoUpdate = false;
-    texture.matrix = new THREE.Matrix3().translate(-1, 0).scale(-1, 1);
     this.material.setValues({ map: texture });
   }
 }
