@@ -74,7 +74,8 @@ export default class Scene {
       this.setSize(canvas);
     }
     this.control = control;
-    this.direction = new THREE.Spherical(1, DEFAULT_PHI, DEFAULT_THETA);
+    this.direction = new THREE.Spherical();
+    this.setDirection(DEFAULT_PHI, DEFAULT_THETA);
 
     const raf = (fn: () => void) => {
       this.rafId = requestAnimationFrame(() => raf(fn));
@@ -120,16 +121,18 @@ export default class Scene {
   }
 
   private drag = (ev: SceneDragEvent | SceneDragInertiaEvent) => {
-    const { camera, direction, height } = this;
+    const { camera, direction, width, height } = this;
 
     // 拖拽时每 px 旋转的弧度
-    const step = (camera.fov * (D180 / 180)) / height;
-
-    const deltaX = -ev.deltaX * step;
-    const deltaY = -ev.deltaY * step;
+    const stepY = (camera.fov * (D180 / 180)) / height;
     // 倾斜角补偿
-    const scaleX = Math.max(Math.sin(D90 / 3), Math.sin(direction.phi));
-    const theta = direction.theta - deltaX / scaleX;
+    const scaleX = Math.sin(direction.phi);
+    // 最多旋转 180 度
+    const stepX = Math.min(stepY / scaleX, D180 / width);
+
+    const deltaX = -ev.deltaX * stepX;
+    const deltaY = -ev.deltaY * stepY;
+    const theta = direction.theta - deltaX;
     const phi = direction.phi + deltaY;
 
     this.setDirection(phi, theta);

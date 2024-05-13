@@ -17,6 +17,8 @@ export interface SceneDragStartEvent {
 }
 
 export interface SceneDragEvent {
+  x: number;
+  y: number;
   /** 拖拽的距离 x */
   offsetX: number;
   /** 拖拽的距离 y */
@@ -156,6 +158,8 @@ export default class Control {
     path.push([x, y, time]);
 
     this.events.emit('drag', {
+      x: x,
+      y: y,
       offsetX: x - this.startX,
       offsetY: y - this.startY,
       deltaX: x - lastX,
