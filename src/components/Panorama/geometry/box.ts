@@ -4,7 +4,7 @@ import { loadImage, sphereImageToCubeImage } from '@/utils/geometry';
 import { G_SZIE } from '@/utils/consts';
 import type Geometry from './geometry';
 
-export default class Cube implements Geometry {
+export default class Box implements Geometry {
   private mesh: THREE.Mesh;
   private materials: THREE.MeshBasicMaterial[];
 

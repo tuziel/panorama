@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { times } from 'lodash';
-import { Side, loadImage, sphereImageToCubeImage } from '@/utils/geometry';
+import { loadImage, sphereImageToCubeImage } from '@/utils/geometry';
 import { D90, D180, D270, G_SZIE } from '@/utils/consts';
 import type Geometry from './geometry';
 
@@ -12,7 +12,7 @@ const transfroms: ((plane: THREE.Object3D) => THREE.Object3D)[] = [
   (p) => p.translateZ(-G_SZIE),
   (p) => p.translateZ(G_SZIE).rotateY(D180),
 ];
-export default class Cube implements Geometry {
+export default class Planes implements Geometry {
   private mesh: THREE.Mesh;
   private materials: THREE.MeshBasicMaterial[];
 
