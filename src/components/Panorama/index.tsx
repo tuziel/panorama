@@ -1,6 +1,6 @@
 import { useContext, useEffect, useRef } from 'react';
-import type { Geometry } from './scene/geometry';
-import { Sphere } from './scene/geometry';
+import type { Geometry } from './geometry';
+import { Sphere } from './geometry';
 import Scene from './scene';
 
 import styles from './scene.module.css';
