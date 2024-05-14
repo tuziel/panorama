@@ -11,8 +11,12 @@ import Control from './control';
 
 // 视角
 const DEFAULT_FOV = 90;
-const MIN_FOV = 10;
+const MIN_FOV = 2;
 const MAX_FOV = 100;
+// 视角缩放步长
+const FOV_STEP = 0.001;
+
+// 默认镜头方向
 const DEFAULT_PHI = D90;
 const DEFAULT_THETA = D180;
 
@@ -142,7 +146,7 @@ export default class Scene {
     const camera = this.camera;
     // const { phi, theta } = this.direction;
 
-    const fov = camera.fov + ev.delta / 20;
+    const fov = camera.fov * (1 + ev.delta * FOV_STEP);
     camera.fov = Math.max(MIN_FOV, Math.min(fov, MAX_FOV));
 
     // const delta = ev.delta / 100;
