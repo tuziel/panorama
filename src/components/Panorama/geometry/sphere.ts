@@ -7,8 +7,8 @@ export default class Sphere implements Geometry {
   private material: THREE.MeshBasicMaterial;
 
   constructor(src?: string) {
-    const geometry = new THREE.SphereGeometry(G_SZIE, 180, 90);
-    geometry.scale(1, 1, -1).rotateY(D90);
+    const geometry = new THREE.SphereGeometry(G_SZIE, 180, 90, -D90);
+    geometry.scale(1, 1, -1);
     this.material = new THREE.MeshBasicMaterial();
     this.mesh = new THREE.Mesh(geometry, this.material);
     if (src) this.setTexture(src);

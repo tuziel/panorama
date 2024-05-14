@@ -1,9 +1,18 @@
-import { D90, D180, D360 } from './consts';
+import { D90, D180, D360, D270 } from './consts';
 
+/**
+ * three.js 坐标系定义
+ * x 轴从左向右
+ * y 轴从下向上
+ * z 轴从内向外
+ * phi 极角从 +y 开始
+ * theta 方位角从 +z 开始向 +x 方向旋转
+ */
 type Cartesian2 = [number, number];
 type Cartesian3 = [number, number, number];
-type Latlng = [number, number];
+type Spherical = [number, number];
 type RGBA = [number, number, number, number];
+type ImageOrData = HTMLImageElement | ImageData;
 
 export enum Side {
   'RIGHT',
@@ -15,70 +24,69 @@ export enum Side {
 }
 
 /**
- * 直角坐标转经纬度
- * @param x x 轴指向屏幕内
- * @param y y 轴指向右
- * @param z z 轴指向下
- * @returns 经纬度 `lat = [-PI/2, PI/2]`, `lng = [-PI, PI]`
+ * 直角坐标转球坐标
+ * @param x x 轴从左向右
+ * @param y y 轴从下向上
+ * @param z z 轴从内向外
  */
-export function cartToLatlng(x: number, y: number, z: number): Latlng {
-  const xy = Math.sqrt(x * x + y * y);
-  const lat = Math.atan2(z, xy);
-  const lng = Math.atan2(y, x);
+export function cartToSph01(x: number, y: number, z: number): Spherical {
+  const xz = Math.sqrt(x * x + z * z);
+  const phi = Math.atan2(xz, y);
+  const theta = Math.atan2(x, z);
 
-  return [lat, lng];
+  return [phi, theta];
 }
 
 /**
- * 经纬度转直角坐标
- * @param lat 纬度 (与 x 轴的夹角)
- * @param lng 经度 (位矢在 x-y 面的投影与 x 轴的夹角)
+ * 球坐标转直角坐标
+ * @param phi 极角从 +y 开始
+ * @param theta 方位角从 +z 开始向 +x 方向旋转
  */
-export function latlngToCart(lat: number, lng: number): Cartesian3 {
-  const x = Math.cos(lng);
-  const y = Math.sin(lng);
-  const z = Math.tan(lat);
+export function sphToCart01(phi: number, theta: number): Cartesian3 {
+  const x = Math.sin(theta);
+  const y = Math.min(1 / Math.tan(phi), Number.MAX_VALUE);
+  const z = Math.cos(theta);
   const scale = Math.max(Math.abs(x), Math.abs(y), Math.abs(z));
 
   return [x, y, z].map((n) => n / scale) as Cartesian3;
 }
 
-const uvToLatlngMapping: ((...args: Cartesian2) => Cartesian3)[] = [
-  (u, v) => [-u, 1, v],
-  (u, v) => [u, -1, v],
-  (u, v) => [v, u, -1],
-  (u, v) => [-v, u, 1],
-  (u, v) => [1, u, v],
-  (u, v) => [-1, -u, v],
+const uvToSphMapping: ((...args: Cartesian2) => Cartesian3)[] = [
+  (u, v) => [1, -v, -u],
+  (u, v) => [-1, -v, u],
+  (u, v) => [u, 1, v],
+  (u, v) => [u, -1, -v],
+  (u, v) => [u, -v, 1],
+  (u, v) => [-u, -v, -1],
 ];
 
 /**
- * 获取立方体面坐标对应的经纬度
+ * 获取立方体面坐标对应的球坐标
  * @param side 立方体面对应方向
  * @param u 对应的横坐标
  * @param v 对应的纵坐标
  */
-export function uvToLatlng(side: Side, u: number, v: number) {
-  const cart = uvToLatlngMapping[side](u, v);
-  return cartToLatlng(...cart);
+export function uvToSph(side: Side, u: number, v: number) {
+  const cart = uvToSphMapping[side](u * 2 - 1, v * 2 - 1);
+  return cartToSph01(...cart);
 }
 
-const latlngToUvMapping: ((...args: Cartesian3) => [Side, ...Cartesian2])[] = [
-  (_, y, z) => [Side.FRONT, y, z],
-  (x, _, z) => [Side.RIGHT, -x, z],
-  (x, y) => [Side.BOTTOM, y, -x],
-  (_, y, z) => [Side.BACK, -y, z],
-  (x, _, z) => [Side.LEFT, x, z],
-  (x, y) => [Side.TOP, y, x],
+const SphToUvMapping: ((...args: Cartesian3) => [Side, ...Cartesian2])[] = [
+  (_, y, z) => [Side.RIGHT, -z, -y],
+  (x, _, z) => [Side.TOP, x, z],
+  (x, y) => [Side.FRONT, x, -y],
+  (_, y, z) => [Side.LEFT, z, -y],
+  (x, _, z) => [Side.BOTTOM, x, -z],
+  (x, y) => [Side.BACK, -x, -y],
 ];
 
 /**
- * 经纬度转六面图坐标
- * @param lat 纬度
- * @param lng 经度
+ * 球坐标转六面图坐标
+ * @param phi 极角从 +y 开始
+ * @param theta 方位角从 +z 开始向 +x 方向旋转
  */
-export function latlngToUV(lat: number, lng: number) {
-  const cart = latlngToCart(lat, lng);
+export function SphToUv(phi: number, theta: number) {
+  const cart = sphToCart01(phi, theta);
   // [ 1,  0,  0] +x 0b000001
   // [ 0,  1,  0] +y 0b000010
   // [ 0,  0,  1] +z 0b000100
@@ -87,7 +95,7 @@ export function latlngToUV(lat: number, lng: number) {
   // [ 0,  0, -1] -z 0b111100
   const vecSign = cart.reduce((s, v, i) => s | ((v & 0b1111) << i), 0);
   const index = countBits(vecSign) - 1;
-  return latlngToUvMapping[index](...latlngToCart(lat, lng));
+  return SphToUvMapping[index](...sphToCart01(phi, theta));
 }
 
 /**
@@ -97,33 +105,29 @@ export function latlngToUV(lat: number, lng: number) {
  * @param size 输出图片大小
  */
 export function sphereImageToCubeImage(
-  image: HTMLImageElement,
+  image: ImageOrData,
   side: Side,
   size?: number,
 ) {
   const { width, height } = image;
   const outSize = size || Math.min(width / 4, height / 2);
+  const outSizeS1 = outSize - 1;
 
   const picker = createColorPicker(image);
 
   const imageData = new ImageData(outSize, outSize);
   const data = imageData.data;
 
-  const coordToScale = (coord: number) => coord / (outSize / 2) - 1;
-  const scaleToX = (lng: number) => ((lng + D180) / D360) * width;
-  const scaleToY = (lat: number) => ((lat + D90) / D180) * height;
+  let phi, theta, x, y, iData, color;
 
-  let lat, lng, x, y, iData, color;
+  for (let sx = 0; sx < outSize; sx++) {
+    for (let sy = 0; sy < outSize; sy++) {
+      [phi, theta] = uvToSph(side, sx / outSizeS1, sy / outSizeS1);
+      x = ((((theta + D180) / D360) % 1) + 1) % 1;
+      y = (((phi / D180) % 1) + 1) % 1;
 
-  for (let u = 0; u < outSize; u++) {
-    for (let v = 0; v < outSize; v++) {
-      [lat, lng] = uvToLatlng(side, coordToScale(u), coordToScale(v));
-
-      x = scaleToX(lng);
-      y = scaleToY(lat);
       color = picker(x, y);
-
-      iData = (v * outSize + u) * 4;
+      iData = (sy * outSize + sx) * 4;
       for (let i = 0; i < 4; i++) {
         data[iData + i] = color[i];
       }
@@ -144,18 +148,20 @@ export function sphereImageToCubeImage(
  * @param size 输出图片大小
  */
 export function cubeImageToSphereImage(
-  right: HTMLImageElement,
-  left: HTMLImageElement,
-  top: HTMLImageElement,
-  bottom: HTMLImageElement,
-  front: HTMLImageElement,
-  back: HTMLImageElement,
+  right: ImageOrData,
+  left: ImageOrData,
+  top: ImageOrData,
+  bottom: ImageOrData,
+  front: ImageOrData,
+  back: ImageOrData,
   size?: number,
 ) {
   const { width, height } = right;
   const baseSize = Math.min(width, height);
   const outWidth = (size || baseSize) * 4;
   const outHeight = (size || baseSize) * 2;
+  const outWidthS1 = outWidth - 1;
+  const outHeightS1 = outHeight - 1;
 
   const pickers = [
     createColorPicker(right),
@@ -169,22 +175,18 @@ export function cubeImageToSphereImage(
   const imageData = new ImageData(outWidth, outHeight);
   const data = imageData.data;
 
-  const coordToLat = (coord: number) => (coord / outHeight) * D180 - D90;
-  const coordToLng = (coord: number) => (coord / outWidth) * D360 - D180;
-  const scaleToX = (u: number) => ((u + 1) / 2) * baseSize;
-  const scaleToY = (v: number) => ((v + 1) / 2) * baseSize;
+  let phi, theta, side, x, y, iData, color;
 
-  let side, u, v, x, y, iData, color;
+  for (let sx = 0; sx < outWidth; sx++) {
+    for (let sy = 0; sy < outHeight; sy++) {
+      phi = (sy / outHeightS1) * D180;
+      theta = (sx / outWidthS1) * D360 - D180;
+      [side, x, y] = SphToUv(phi, theta);
+      x = (x + 1) / 2;
+      y = (y + 1) / 2;
 
-  for (let oX = 0; oX < outWidth; oX++) {
-    for (let oY = 0; oY < outHeight; oY++) {
-      [side, u, v] = latlngToUV(coordToLat(oY), coordToLng(oX));
-
-      x = scaleToX(u);
-      y = scaleToY(v);
       color = pickers[side](x, y);
-
-      iData = (oY * outWidth + oX) * 4;
+      iData = (sy * outWidth + sx) * 4;
       for (let i = 0; i < 4; i++) {
         data[iData + i] = color[i];
       }
@@ -254,19 +256,24 @@ export function loadImageData(src: string) {
 }
 
 /**
- * 创建支持小数坐标的取色器
+ * 创建基于 uv 坐标的取色器
  * @param image 取色目标图片
  */
-export function createColorPicker(image: HTMLImageElement) {
+export function createColorPicker(image: ImageOrData) {
   const { width, height } = image;
-  const data = imageToData(image).data;
+  const widthS1 = width - 1;
+  const heightS1 = height - 1;
+  const isImgElm = image instanceof HTMLImageElement;
+  const data = isImgElm ? imageToData(image).data : image.data;
 
   /**
    * 取色器
-   * @param x 图片的 x 坐标
-   * @param y 图片的 y 坐标
+   * @param u 图片列位置
+   * @param v 图片行位置
    */
-  function picker(x: number, y: number): RGBA {
+  function picker(u: number, v: number): RGBA {
+    const x = u * widthS1;
+    const y = v * heightS1;
     const pr = x % 1;
     const pb = y % 1;
     const plt = (1 - pr) * (1 - pb);
@@ -275,18 +282,14 @@ export function createColorPicker(image: HTMLImageElement) {
     const prb = pr * pb;
 
     // 线性插值
-    const sx = Math.min(Math.floor(x), width - 1);
-    const sy = Math.min(Math.floor(y), height - 1);
-    const sr = Math.min(sx + 1, width - 1);
-    const sb = Math.min(sy + 1, height - 1);
-    let ilt = sy * width + sx;
-    let ilb = sb * width + sx;
-    let irt = sy * width + sr;
-    let irb = sb * width + sr;
-    ilt *= 4;
-    ilb *= 4;
-    irt *= 4;
-    irb *= 4;
+    const sx = Math.floor(x);
+    const sy = Math.floor(y);
+    const sr = Math.ceil(x);
+    const sb = Math.ceil(y);
+    const ilt = (sy * width + sx) * 4;
+    const ilb = (sb * width + sx) * 4;
+    const irt = (sy * width + sr) * 4;
+    const irb = (sb * width + sr) * 4;
 
     return [0, 1, 2, 3].map(
       (i) =>
