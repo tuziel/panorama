@@ -1,6 +1,4 @@
-import type { EventData } from '@/utils/EventManager';
-import EventManager from '@/utils/EventManager';
-import EventEmitter from '@/utils/EventManager/EventEmitter';
+import EventEmitter from 'events';
 
 /** 最少采样次数 */
 const MIN_SAMPLING_LENGTH = 4;
@@ -67,29 +65,25 @@ export interface EventMap {
   scale: SceneScaleEvent;
   wheel: SceneWheelEvent;
   resize: SceneResizeEvent;
+  // eslint-disable-next-line no-use-before-define
+  destory: Emitter;
 }
 
-type Events = {
-  [K in keyof EventMap]: EventEmitter<EventMap[K]>;
-};
+type EventType = keyof EventMap;
+export type Action<T extends EventType> = (event: EventMap[T]) => void;
 
-export default class Control {
+export default class Emitter {
+  /** 绑定的 canvas */
   private target;
 
-  private startX = 0;
-  private startY = 0;
+  /** 事件管理中心 */
+  protected emitter: EventEmitter = new EventEmitter().setMaxListeners(0);
+
+  private dragStartX = 0;
+
+  private dragStartY = 0;
 
   private rafId = -1;
-
-  private events = new EventManager({
-    dragStart: new EventEmitter<SceneDragStartEvent>(),
-    drag: new EventEmitter<SceneDragEvent>(),
-    dragEnd: new EventEmitter<SceneDragEndEvent>(),
-    dragInertia: new EventEmitter<SceneDragInertiaEvent>(),
-    scale: new EventEmitter<SceneScaleEvent>(),
-    wheel: new EventEmitter<SceneWheelEvent>(),
-    resize: new EventEmitter<SceneResizeEvent>(),
-  } as Events);
 
   /** [x, y, time] */
   private path: [number, number, number][] = [];
@@ -99,22 +93,48 @@ export default class Control {
     this.init();
   }
 
-  public on<K extends keyof Events>(
-    type: K,
-    listener: (ev: EventData<Events[K]>) => void,
-  ) {
-    this.events.on(type, listener);
+  /**
+   * 添加指令到事件
+   * @param type 事件类型
+   * @param action 指令
+   */
+  public addListener<T extends EventType>(type: T, action: Action<T>) {
+    this.emitter.addListener(type, action);
+  }
+  public on = this.addListener;
+
+  /**
+   * 移除指令从事件
+   * @param type 事件类型
+   * @param action 指令
+   */
+  public removeListener<T extends EventType>(type: T, action: Action<T>) {
+    this.emitter.removeListener(type, action);
+  }
+  public off = this.removeListener;
+
+  /**
+   * 触发事件
+   * @param type 事件类型
+   * @param event 事件内容
+   */
+  public emit<T extends EventType>(type: T, event: EventMap[T]) {
+    this.emitter.emit(type, event);
   }
 
-  public off<K extends keyof Events>(
-    type: K,
-    listener: (ev: EventData<Events[K]>) => void,
-  ) {
-    this.events.off(type, listener);
+  private init() {
+    const { target } = this;
+    target.addEventListener('touchstart', this.ontouchstart);
+    target.addEventListener('mousedown', this.onmousedown);
+    target.addEventListener('wheel', this.onwheel);
+    window.addEventListener('resize', this.onresize);
   }
 
+  /**
+   * 销毁节点
+   */
   public destory() {
-    const target = this.target;
+    const { target } = this;
     target.removeEventListener('touchstart', this.ontouchstart);
     target.removeEventListener('touchmove', this.ontouchmove);
     target.removeEventListener('touchend', this.ontouchend);
@@ -126,28 +146,22 @@ export default class Control {
     target.removeEventListener('wheel', this.onwheel);
     window.removeEventListener('resize', this.onresize);
     cancelAnimationFrame(this.rafId);
+    this.emit('destory', this);
+    this.emitter.removeAllListeners();
   }
 
   public updateSize() {
     this.onresize();
   }
 
-  private init() {
-    const target = this.target;
-    target.addEventListener('touchstart', this.ontouchstart);
-    target.addEventListener('mousedown', this.onmousedown);
-    target.addEventListener('wheel', this.onwheel);
-    window.addEventListener('resize', this.onresize);
-  }
-
   private dragStart(x: number, y: number, time: number) {
-    this.startX = x;
-    this.startY = y;
+    this.dragStartX = x;
+    this.dragStartY = y;
     this.path = [[x, y, time]];
 
     cancelAnimationFrame(this.rafId);
 
-    this.events.emit('dragStart', { x, y });
+    this.emitter.emit('dragStart', { x, y });
   }
 
   private drag(x: number, y: number, time: number) {
@@ -157,11 +171,11 @@ export default class Control {
     if (path.length >= MAX_SAMPLING_LENGTH) path.shift();
     path.push([x, y, time]);
 
-    this.events.emit('drag', {
-      x: x,
-      y: y,
-      offsetX: x - this.startX,
-      offsetY: y - this.startY,
+    this.emitter.emit('drag', {
+      x,
+      y,
+      offsetX: x - this.dragStartX,
+      offsetY: y - this.dragStartY,
       deltaX: x - lastX,
       deltaY: y - lasyY,
     });
@@ -187,7 +201,7 @@ export default class Control {
     }
 
     if (vx !== 0) this.inertia(vx, vy, performance.now());
-    this.events.emit('dragEnd', { velocityX: vx, velocityY: vy });
+    this.emitter.emit('dragEnd', { velocityX: vx, velocityY: vy });
   }
 
   private inertia(vx: number, vy: number, lastTime: number) {
@@ -206,7 +220,7 @@ export default class Control {
       deltaY = ((vy + vy2) / 2) * dt;
       if (v > 0) this.inertia(vx2, vy2, time);
 
-      this.events.emit('dragInertia', { deltaX, deltaY });
+      this.emitter.emit('dragInertia', { deltaX, deltaY });
     });
   }
 
@@ -216,7 +230,7 @@ export default class Control {
 
     // TODO: 未实现 scale
 
-    const target = this.target;
+    const { target } = this;
     target.removeEventListener('touchstart', this.ontouchstart);
     target.addEventListener('touchmove', this.ontouchmove);
     target.addEventListener('touchend', this.ontouchend);
@@ -232,16 +246,17 @@ export default class Control {
     const dt = performance.now() - this.path[this.path.length - 1][2];
     if (dt <= MAX_SAMPLING_TIME) this.dragEnd();
 
-    const target = this.target;
+    const { target } = this;
     target.addEventListener('touchstart', this.ontouchstart);
     target.removeEventListener('touchmove', this.ontouchmove);
     target.removeEventListener('touchend', this.ontouchend);
     target.removeEventListener('touchcancel', this.ontouchend);
   };
 
-  private onscale() {
-    // TODO: 此处应有缩放
-  }
+  // TODO: 此处应有缩放
+  // private onscale() {
+  //
+  // }
 
   private onmousedown = (ev: MouseEvent) => {
     if (ev.button !== 0) return;
@@ -249,7 +264,7 @@ export default class Control {
     const { clientX, clientY } = ev;
     this.dragStart(clientX, clientY, performance.now());
 
-    const target = this.target;
+    const { target } = this;
     target.removeEventListener('mousedown', this.onmousedown);
     window.addEventListener('mousemove', this.onmousemove, true);
     window.addEventListener('mouseup', this.onmouseup, true);
@@ -264,7 +279,7 @@ export default class Control {
     this.onmousemove(ev);
     this.dragEnd();
 
-    const target = this.target;
+    const { target } = this;
     target.addEventListener('mousedown', this.onmousedown);
     window.removeEventListener('mousemove', this.onmousemove, true);
     window.removeEventListener('mouseup', this.onmouseup, true);
@@ -276,12 +291,12 @@ export default class Control {
   };
 
   private onwheel = (ev: WheelEvent) => {
-    this.events.emit('wheel', { delta: ev.deltaY });
+    this.emitter.emit('wheel', { delta: ev.deltaY });
   };
 
   private onresize = () => {
     const width = window.innerWidth;
     const height = window.innerHeight;
-    this.events.emit('resize', { width, height });
+    this.emitter.emit('resize', { width, height });
   };
 }
