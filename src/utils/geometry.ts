@@ -1,4 +1,4 @@
-import { D90, D180, D360, D270 } from './consts';
+import { D180, D360 } from './consts';
 
 /**
  * three.js 坐标系定义
@@ -95,7 +95,10 @@ export function SphToUv(phi: number, theta: number) {
   // [ 0,  0, -1] -z 0b111100
   const vecSign = cart.reduce((s, v, i) => s | ((v & 0b1111) << i), 0);
   const index = countBits(vecSign) - 1;
-  return SphToUvMapping[index](...sphToCart01(phi, theta));
+  const [side, x, y] = SphToUvMapping[index](...cart);
+  const u = (x + 1) / 2;
+  const v = (y + 1) / 2;
+  return [side, u, v];
 }
 
 /**
@@ -111,26 +114,21 @@ export function sphereImageToCubeImage(
 ) {
   const { width, height } = image;
   const outSize = size || Math.min(width / 4, height / 2);
-  const outSizeS1 = outSize - 1;
 
   const picker = createColorPicker(image);
 
   const imageData = new ImageData(outSize, outSize);
-  const data = imageData.data;
 
-  let phi, theta, x, y, iData, color;
+  let phi, theta, x, y, color;
 
   for (let sx = 0; sx < outSize; sx++) {
     for (let sy = 0; sy < outSize; sy++) {
-      [phi, theta] = uvToSph(side, sx / outSizeS1, sy / outSizeS1);
+      [phi, theta] = uvToSph(side, sx / outSize, sy / outSize);
       x = ((((theta + D180) / D360) % 1) + 1) % 1;
       y = (((phi / D180) % 1) + 1) % 1;
 
       color = picker(x, y);
-      iData = (sy * outSize + sx) * 4;
-      for (let i = 0; i < 4; i++) {
-        data[iData + i] = color[i];
-      }
+      setColor(imageData, sx, sy, color);
     }
   }
 
@@ -160,8 +158,6 @@ export function cubeImageToSphereImage(
   const baseSize = Math.min(width, height);
   const outWidth = (size || baseSize) * 4;
   const outHeight = (size || baseSize) * 2;
-  const outWidthS1 = outWidth - 1;
-  const outHeightS1 = outHeight - 1;
 
   const pickers = [
     createColorPicker(right),
@@ -173,23 +169,17 @@ export function cubeImageToSphereImage(
   ];
 
   const imageData = new ImageData(outWidth, outHeight);
-  const data = imageData.data;
 
-  let phi, theta, side, x, y, iData, color;
+  let phi, theta, side, x, y, color;
 
   for (let sx = 0; sx < outWidth; sx++) {
     for (let sy = 0; sy < outHeight; sy++) {
-      phi = (sy / outHeightS1) * D180;
-      theta = (sx / outWidthS1) * D360 - D180;
+      phi = (sy / outHeight) * D180;
+      theta = (sx / outWidth) * D360 - D180;
       [side, x, y] = SphToUv(phi, theta);
-      x = (x + 1) / 2;
-      y = (y + 1) / 2;
 
       color = pickers[side](x, y);
-      iData = (sy * outWidth + sx) * 4;
-      for (let i = 0; i < 4; i++) {
-        data[iData + i] = color[i];
-      }
+      setColor(imageData, sx, sy, color);
     }
   }
 
@@ -261,8 +251,6 @@ export function loadImageData(src: string) {
  */
 export function createColorPicker(image: ImageOrData) {
   const { width, height } = image;
-  const widthS1 = width - 1;
-  const heightS1 = height - 1;
   const isImgElm = image instanceof HTMLImageElement;
   const data = isImgElm ? imageToData(image).data : image.data;
 
@@ -272,35 +260,49 @@ export function createColorPicker(image: ImageOrData) {
    * @param v 图片行位置
    */
   function picker(u: number, v: number): RGBA {
-    const x = u * widthS1;
-    const y = v * heightS1;
-    const pr = x % 1;
-    const pb = y % 1;
+    const x = Math.min(Math.max(0, u * width - 0.5), width - 1);
+    const y = Math.min(Math.max(0, v * height - 0.5), height - 1);
+
+    // 线性插值
+    const x1 = Math.floor(x);
+    const x2 = Math.ceil(x);
+    const y1 = Math.floor(y);
+    const y2 = Math.ceil(y);
+
+    const pr = x - x1;
+    const pb = y - y1;
     const plt = (1 - pr) * (1 - pb);
     const plb = (1 - pr) * pb;
     const prt = pr * (1 - pb);
     const prb = pr * pb;
 
-    // 线性插值
-    const sx = Math.floor(x);
-    const sy = Math.floor(y);
-    const sr = Math.ceil(x);
-    const sb = Math.ceil(y);
-    const ilt = (sy * width + sx) * 4;
-    const ilb = (sb * width + sx) * 4;
-    const irt = (sy * width + sr) * 4;
-    const irb = (sb * width + sr) * 4;
+    const ilt = (y1 * width + x1) * 4;
+    const ilb = (y2 * width + x1) * 4;
+    const irt = (y1 * width + x2) * 4;
+    const irb = (y2 * width + x2) * 4;
 
-    return [0, 1, 2, 3].map(
-      (i) =>
+    const color: RGBA = [0, 0, 0, 0];
+    for (let i = 0; i < 4; i++) {
+      color[i] =
         data[ilt + i] * plt +
         data[ilb + i] * plb +
         data[irt + i] * prt +
-        data[irb + i] * prb,
-    ) as RGBA;
+        data[irb + i] * prb;
+    }
+
+    return color as RGBA;
   }
 
   return picker;
+}
+
+export function setColor(image: ImageData, x: number, y: number, color: RGBA) {
+  const width = image.width;
+  const index = (y * width + x) * 4;
+
+  for (let i = 0; i < 4; i++) {
+    image.data[index + i] = color[i];
+  }
 }
 
 export function countBits(n: number) {
