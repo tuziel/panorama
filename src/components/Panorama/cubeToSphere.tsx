@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { cubeImageToSphereImage, loadImage } from '@/utils/geometry';
 
-const urlR = '/demo1_R.jpg';
-const urlL = '/demo1_L.jpg';
-const urlU = '/demo1_U.jpg';
-const urlD = '/demo1_D.jpg';
-const urlF = '/demo1_F.jpg';
-const urlB = '/demo1_B.jpg';
+const urlR = '/assets/demo1_R.jpg';
+const urlL = '/assets/demo1_L.jpg';
+const urlU = '/assets/demo1_U.jpg';
+const urlD = '/assets/demo1_D.jpg';
+const urlF = '/assets/demo1_F.jpg';
+const urlB = '/assets/demo1_B.jpg';
 
 function loadImages(srcs: string[]) {
   return Promise.all<HTMLImageElement>(srcs.map(loadImage));

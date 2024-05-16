@@ -3,7 +3,7 @@ import PanoramaControlContext from '@/context/PanoramaControlContext';
 
 import styles from './Menu.module.css';
 
-const imageUrl = '/demo1.jpg';
+const imageUrl = '/assets/demo1.jpg';
 
 const Menu: React.FC = () => {
   const { setSrc } = useContext(PanoramaControlContext);
