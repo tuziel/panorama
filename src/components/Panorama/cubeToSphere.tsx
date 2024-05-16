@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { cubeImageToSphereImage, loadImage } from '@/utils/geometry';
 
-import urlR from 'src/assets/demo1_R.jpg';
-import urlL from 'src/assets/demo1_L.jpg';
-import urlU from 'src/assets/demo1_U.jpg';
-import urlD from 'src/assets/demo1_D.jpg';
-import urlF from 'src/assets/demo1_F.jpg';
-import urlB from 'src/assets/demo1_B.jpg';
+const urlR = '/demo1_R.jpg';
+const urlL = '/demo1_L.jpg';
+const urlU = '/demo1_U.jpg';
+const urlD = '/demo1_D.jpg';
+const urlF = '/demo1_F.jpg';
+const urlB = '/demo1_B.jpg';
 
 function loadImages(srcs: string[]) {
   return Promise.all<HTMLImageElement>(srcs.map(loadImage));
@@ -22,7 +22,7 @@ const Panorama: React.FC = () => {
     canvas.width = size * 4;
     canvas.height = size * 2;
 
-    loadImages([urlR, urlL, urlU, urlD, urlF, urlB].map(({ src }) => src)).then(
+    loadImages([urlR, urlL, urlU, urlD, urlF, urlB]).then(
       ([r, l, u, d, f, b]) => {
         const image = cubeImageToSphereImage(r, l, u, d, f, b, size);
         context.putImageData(image, 0, 0);

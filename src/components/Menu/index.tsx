@@ -1,8 +1,9 @@
 import { useContext, useEffect } from 'react';
 import PanoramaControlContext from '@/context/PanoramaControlContext';
-import imageUrl from '@/assets/demo1.jpg';
 
 import styles from './Menu.module.css';
+
+const imageUrl = '/demo1.jpg';
 
 const Menu: React.FC = () => {
   const { setSrc } = useContext(PanoramaControlContext);
@@ -25,7 +26,7 @@ const Menu: React.FC = () => {
   }
 
   useEffect(() => {
-    setSrc(imageUrl.src);
+    setSrc(imageUrl);
   }, [setSrc]);
 
   return (
