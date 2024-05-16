@@ -85,7 +85,7 @@ const SphToUvMapping: ((...args: Cartesian3) => [Side, ...Cartesian2])[] = [
  * @param phi 极角从 +y 开始
  * @param theta 方位角从 +z 开始向 +x 方向旋转
  */
-export function SphToUv(phi: number, theta: number) {
+export function SphToUv(phi: number, theta: number): [Side, ...Cartesian2] {
   const cart = sphToCart01(phi, theta);
   // [ 1,  0,  0] +x 0b000001
   // [ 0,  1,  0] +y 0b000010
