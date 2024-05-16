@@ -63,7 +63,7 @@ export default class Panorama {
 
   private material: THREE.MeshBasicMaterial;
 
-  private dones = new Set<string>();
+  private exist = new Set<string>();
 
   constructor(options: PanoramaOptions = {}) {
     const geometry = new THREE.SphereGeometry(G_SZIE, 180, 90).scale(1, 1, -1);
@@ -103,10 +103,11 @@ export default class Panorama {
 
     const url = this.tileMapping(level2, sideCamera, x, y);
     const key = `${level2}-${sideCamera}-${x}-${y}`;
-    if (this.dones.has(key)) return;
+    if (this.exist.has(key)) return;
+    this.exist.add(key);
 
     const loader = cache.has(url) ? cache.get(url)! : loadImage(url);
-    this.dones.add(key);
+    cache.set(url, loader);
 
     const context = this.textureData[sideEnv].getContext('2d')!;
     const size = this.fullSize / segments;
