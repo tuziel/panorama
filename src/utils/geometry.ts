@@ -139,7 +139,6 @@ export function sphereImageToCubeImage(
 ) {
   const { width, height } = image;
   const outSize = size || Math.min(width / 4, height / 2);
-  const outSizeS1 = outSize - 1;
 
   const picker = createColorPicker(image);
 
@@ -149,7 +148,7 @@ export function sphereImageToCubeImage(
 
   for (let sx = 0; sx < outSize; sx++) {
     for (let sy = 0; sy < outSize; sy++) {
-      [phi, theta] = uvToSph(side, sx / outSizeS1, sy / outSizeS1);
+      [phi, theta] = uvToSph(side, (sx + 0.5) / outSize, (sy + 0.5) / outSize);
       u = ((((theta + D180) / D360) % 1) + 1) % 1;
       v = (((phi / D180) % 1) + 1) % 1;
 
@@ -184,8 +183,6 @@ export function cubeImageToSphereImage(
   const baseSize = Math.min(width, height);
   const outWidth = (size || baseSize) * 4;
   const outHeight = (size || baseSize) * 2;
-  const outWidthS1 = outWidth - 1;
-  const outHeightS1 = outHeight - 1;
 
   const pickers = [
     createColorPicker(right),
@@ -202,8 +199,8 @@ export function cubeImageToSphereImage(
 
   for (let sx = 0; sx < outWidth; sx++) {
     for (let sy = 0; sy < outHeight; sy++) {
-      phi = (sy / outHeightS1) * D180;
-      theta = (sx / outWidthS1) * D360 - D180;
+      phi = ((sy + 0.5) / outHeight) * D180;
+      theta = ((sx + 0.5) / outWidth) * D360 - D180;
       [side, u, v] = SphToUv(phi, theta);
 
       color = pickers[side](u, v);
@@ -365,8 +362,8 @@ export function xyMapping<T>(
   fn: (x: number, y: number) => T,
   width: number,
   height: number,
-  dWidth = width,
-  dHeight = height,
+  dWidth: number,
+  dHeight: number,
 ) {
   /**
    * 取色器
@@ -374,8 +371,8 @@ export function xyMapping<T>(
    * @param y 图片像素 y 坐标
    */
   return (x: number, y: number) => {
-    const x2 = clamp(scaleIndex(x, dWidth / width), 0, width - 1);
-    const y2 = clamp(scaleIndex(y, dHeight / height), 0, height - 1);
+    const x2 = clamp(scaleIndex(x, width / dWidth), 0, width - 1);
+    const y2 = clamp(scaleIndex(y, height / dHeight), 0, height - 1);
     return fn(x2, y2);
   };
 }
@@ -411,7 +408,13 @@ export function createColorPicker(
   const isImgElm = image instanceof HTMLImageElement;
   const data = isImgElm ? imageToData(image) : image;
   const xyPicker = creator(data);
-  const mappedPicker = mapping(xyPicker, width, height, dWidth, dHeight);
+  const mappedPicker = mapping(
+    xyPicker,
+    width,
+    height,
+    dWidth || width,
+    dHeight || height,
+  );
 
   return mappedPicker;
 }
