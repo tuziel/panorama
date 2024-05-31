@@ -10,9 +10,10 @@ const Panorama: React.FC = () => {
     const canvas = refCanvas.current!;
     const scene = new Scene(canvas, {
       tileMapping: (level, side, x, y) => {
-        const s = 'RLUDFB'[side];
-        return `/assets/demo1_${s}.jpg`;
+        return `/assets/demo1_${'RLUDFB'[side]}.jpg`;
       },
+      tileSize: 1024,
+      tiledImageSize: [0, 1024, 2048, 3584, 7296],
     });
 
     return () => {

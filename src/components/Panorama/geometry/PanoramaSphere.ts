@@ -87,14 +87,14 @@ export default class Panorama {
   }
 
   private init() {
-    this.textureData.forEach((_, side) => this.updateTexture(1, side, 0, 0));
+    this.textureData.forEach((_, side) => this.update(1, side, 0, 0));
   }
 
   public getMesh() {
     return this.mesh;
   }
 
-  public updateTexture(level: number, side: Side, u: number, v: number) {
+  public update(level: number, side: Side, u: number, v: number) {
     const level2 = Math.min(Math.max(this.minLevel, level), this.maxLevel);
     const segments = 2 ** (level2 - 1);
     const [sideCamera, sideEnv, u2, v2] = sideMapping[side](u, v);

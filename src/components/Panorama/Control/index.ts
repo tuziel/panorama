@@ -10,7 +10,7 @@ import type {
   EventMap,
 } from './Emitter';
 import Emitter from './Emitter';
-import type Panorama from '../geometry/PanoramaSphere';
+import type Panorama from '../geometry/PanoramaCube';
 import { SphToUv } from '@/utils/geometry';
 
 // 视角
@@ -108,15 +108,15 @@ export default class Control {
     const { fov } = this.camera;
     const level = Math.floor(Math.log2(90 / fov)) + 1;
     const dFov = (fov / 180) * D180;
-    this.panorama.updateTexture(level, ...SphToUv(phi - dFov, theta - dFov));
-    this.panorama.updateTexture(level, ...SphToUv(phi - dFov, theta));
-    this.panorama.updateTexture(level, ...SphToUv(phi - dFov, theta + dFov));
-    this.panorama.updateTexture(level, ...SphToUv(phi, theta - dFov));
-    this.panorama.updateTexture(level, ...SphToUv(phi, theta));
-    this.panorama.updateTexture(level, ...SphToUv(phi, theta + dFov));
-    this.panorama.updateTexture(level, ...SphToUv(phi + dFov, theta - dFov));
-    this.panorama.updateTexture(level, ...SphToUv(phi + dFov, theta));
-    this.panorama.updateTexture(level, ...SphToUv(phi + dFov, theta + dFov));
+    this.panorama.update(level, ...SphToUv(phi - dFov, theta - dFov));
+    this.panorama.update(level, ...SphToUv(phi - dFov, theta));
+    this.panorama.update(level, ...SphToUv(phi - dFov, theta + dFov));
+    this.panorama.update(level, ...SphToUv(phi, theta - dFov));
+    this.panorama.update(level, ...SphToUv(phi, theta));
+    this.panorama.update(level, ...SphToUv(phi, theta + dFov));
+    this.panorama.update(level, ...SphToUv(phi + dFov, theta - dFov));
+    this.panorama.update(level, ...SphToUv(phi + dFov, theta));
+    this.panorama.update(level, ...SphToUv(phi + dFov, theta + dFov));
     this.camera.updateProjectionMatrix();
   }
 

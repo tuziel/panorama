@@ -3,8 +3,8 @@ import type { Object3D } from 'three';
 import Control from '../Control';
 import type { SceneResizeEvent } from '../Control/Emitter';
 import Emitter from '../Control/Emitter';
-import type { PanoramaOptions } from '../geometry/PanoramaSphere';
-import Panorama from '../geometry/PanoramaSphere';
+import type { PanoramaOptions } from '../geometry/PanoramaCube';
+import Panorama from '../geometry/PanoramaCube';
 
 /** 场景配置 */
 export type SceneOptions = {
@@ -51,7 +51,7 @@ export default class Scene {
     this.camera = new THREE.PerspectiveCamera();
     this.renderer = new THREE.WebGLRenderer({ canvas });
     this.emitter = new Emitter(this.canvas);
-    this.panorama = new Panorama(options);
+    this.panorama = new Panorama(this.scene, options);
     this.control = new Control(canvas, this.camera, this.panorama);
     this.autoSize = options?.autoSize ?? true;
     this.init();
@@ -64,8 +64,6 @@ export default class Scene {
     } else {
       this.setSize(this.canvas);
     }
-
-    this.add(this.panorama.getMesh());
 
     const raf = (fn: () => void) => {
       this.rafId = requestAnimationFrame(() => raf(fn));
