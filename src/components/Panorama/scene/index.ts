@@ -3,8 +3,8 @@ import type { Object3D } from 'three';
 import Control from '../Control';
 import type { SceneResizeEvent } from '../Control/Emitter';
 import Emitter from '../Control/Emitter';
-import type { PanoramaOptions } from '../geometry/PanoramaCube';
-import Panorama from '../geometry/PanoramaCube';
+import type { PanoramaOptions } from '../geometry/Panorama';
+import Panorama from '../geometry/Panorama';
 
 /** 场景配置 */
 export type SceneOptions = {

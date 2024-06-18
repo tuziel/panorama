@@ -61,6 +61,19 @@ const transfroms: ((meta: TileMeta) => XYZRXY)[] = [
   (meta) => [-meta.offsetU, meta.offsetV, meta.radius, 0, D180],
 ];
 
+const normalize = (positions: THREE.TypedArray, unit = 1) => {
+  for (let i = 0; i < positions.length; i += 3) {
+    const x = positions[i];
+    const y = positions[i + 1];
+    const z = positions[i + 2];
+    const vet = new THREE.Vector3(x, y, z).normalize();
+    positions[i] = vet.x * unit;
+    positions[i + 1] = vet.y * unit;
+    positions[i + 2] = vet.z * unit;
+  }
+  return positions;
+};
+
 const defaultOptions: Required<PanoramaOptions> = {
   tileMapping: () => '',
   tileSize: 1024,
@@ -128,14 +141,24 @@ export default class Panorama {
   }
 
   private createTile(meta: TileMeta) {
-    const geometry = new THREE.PlaneGeometry(meta.width, meta.height);
+    const geometry = new THREE.PlaneGeometry(
+      meta.width,
+      meta.height,
+      Math.ceil(meta.width * 5),
+      Math.ceil(meta.height * 5),
+    );
+
     loadImage(meta.url).then((image) => {
       const texture = new THREE.Texture(image);
       texture.needsUpdate = true;
       const material = new THREE.MeshBasicMaterial({ map: texture });
       const mesh = new THREE.Mesh(geometry, material);
       const [x, y, z, rX, rY] = transfroms[meta.side](meta);
-      mesh.translateX(x).translateY(y).translateZ(z).rotateX(rX).rotateY(rY);
+      geometry.rotateX(rX).rotateY(rY).translate(x, y, z);
+      // XXX: 不应该有不同的 radius
+      normalize(geometry.getAttribute('position').array, meta.radius);
+      mesh.renderOrder = meta.level;
+
       this.scene.add(mesh);
     });
   }

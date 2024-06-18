@@ -10,7 +10,7 @@ import type {
   EventMap,
 } from './Emitter';
 import Emitter from './Emitter';
-import type Panorama from '../geometry/PanoramaCube';
+import type Panorama from '../geometry/Panorama';
 import { SphToUv } from '@/utils/geometry';
 
 // 视角
